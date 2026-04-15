@@ -32,6 +32,17 @@ h1{font-size:22px;font-weight:500;color:#1a1a18;margin-bottom:0.25rem;}
 @keyframes spin{to{transform:rotate(360deg);}}
 .last-sync{font-size:11px;color:#b4b2a9;}
 .sync-progress{font-size:11px;color:#185FA5;}
+.onsale-banner{background:#FFF7ED;border:1.5px solid #D97706;border-radius:10px;padding:12px 16px;margin-bottom:1rem;}
+.onsale-banner-title{font-size:12px;font-weight:500;color:#92400E;margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+.onsale-row{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:0.5px solid #FDE68A;cursor:pointer;}
+.onsale-row:last-child{border-bottom:none;}
+.onsale-row:hover{background:#FEF3C7;border-radius:6px;padding-left:4px;}
+.onsale-artist{font-size:13px;font-weight:500;color:#1a1a18;flex:1;}
+.onsale-venue{font-size:11px;color:#888780;}
+.onsale-date-badge{font-size:11px;font-weight:600;padding:2px 10px;border-radius:20px;white-space:nowrap;}
+.onsale-date-badge.now{background:#FEF3C7;color:#92400E;border:1px solid #D97706;}
+.onsale-date-badge.soon{background:#FFF7ED;color:#C2410C;border:1px solid #FB923C;}
+.onsale-date-badge.future{background:#F1F5F9;color:#475569;border:1px solid #CBD5E1;}
 .filter-bar{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:0.75rem;}
 .chip{font-size:11px;padding:3px 10px;border-radius:20px;border:0.5px solid #d3d1c7;cursor:pointer;color:#5f5e5a;background:#fff;white-space:nowrap;transition:box-shadow 0.1s;}
 .chip-all-active{background:#185FA5 !important;color:#B5D4F4 !important;border-color:#185FA5 !important;}
@@ -45,8 +56,6 @@ h1{font-size:22px;font-weight:500;color:#1a1a18;margin-bottom:0.25rem;}
 .today .dn{color:#185FA5;}
 .epill{font-size:9px;padding:1px 5px;border-radius:6px;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;line-height:1.6;display:block;}
 .epill.tracked{outline:1.5px solid #185FA5;outline-offset:-1px;}
-.epill.onsale-now{outline:2px solid #D97706;outline-offset:-1px;}
-.epill.onsale-soon{outline:1.5px dashed #D97706;outline-offset:-1px;}
 .epill.manual{outline:1.5px solid #639922;outline-offset:-1px;}
 .more{font-size:9px;color:#b4b2a9;cursor:pointer;padding:1px 3px;}
 .detail{margin-top:0.75rem;border:0.5px solid #e0ded8;border-radius:12px;padding:1rem 1.25rem;background:#fff;display:none;}
@@ -94,10 +103,6 @@ h1{font-size:22px;font-weight:500;color:#1a1a18;margin-bottom:0.25rem;}
 .fetch-btn{width:100%;margin-top:14px;padding:10px;border:none;border-radius:8px;background:#185FA5;color:#B5D4F4;font-size:14px;cursor:pointer;font-family:inherit;font-weight:500;}
 .fetch-btn:hover{background:#0C447C;}
 .fetch-btn:disabled{opacity:0.5;cursor:not-allowed;}
-.status{font-size:12px;color:#888780;padding:8px 0;min-height:26px;}
-.status.loading{color:#185FA5;}
-.status.err{color:#A32D2D;}
-.status.ok{color:#085041;}
 .fe-row{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:0.5px solid #f1efe8;cursor:pointer;}
 .fe-row:last-child{border-bottom:none;}
 .fe-row:hover{background:#fafaf8;border-radius:6px;}
@@ -117,16 +122,13 @@ h1{font-size:22px;font-weight:500;color:#1a1a18;margin-bottom:0.25rem;}
 .sync-status{font-size:11px;color:#b4b2a9;text-align:right;margin-bottom:0.5rem;}
 .sync-status.syncing{color:#185FA5;}
 .tracked-badge{font-size:10px;background:#E6F1FB;color:#0C447C;padding:1px 7px;border-radius:10px;margin-left:6px;}
-.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:10px;color:#888780;margin-bottom:8px;align-items:center;}
-.legend span{display:flex;align-items:center;gap:4px;}
-.lbox{width:10px;height:10px;border-radius:2px;display:inline-block;}
 .info-banner{background:#E6F1FB;border:0.5px solid #185FA5;border-radius:8px;padding:10px 14px;font-size:12px;color:#0C447C;margin-bottom:1rem;display:flex;align-items:flex-start;gap:8px;}
 </style>
 </head>
 <body>
 <div class="app">
 <h1>Seattle Concert Calendar</h1>
-<p class="subtitle">19 venues &nbsp;·&nbsp; shared with friends &nbsp;·&nbsp; verified shows only</p>
+<p class="subtitle">20 venues &nbsp;·&nbsp; shared with friends &nbsp;·&nbsp; verified shows only</p>
 <div class="name-bar">
 <label>Your name:</label>
 <input type="text" id="userName" placeholder="e.g. Alex" oninput="onNameChange()">
@@ -149,13 +151,7 @@ h1{font-size:22px;font-weight:500;color:#1a1a18;margin-bottom:0.25rem;}
 <span class="last-sync" id="lastSyncLabel"></span>
 <span class="sync-progress" id="syncProgress"></span>
 </div>
-<div class="legend">
-<strong style="color:#5f5e5a;">🎟 Ticket alerts:</strong>
-<span><span class="lbox" style="border:2px solid #D97706;background:#FEF3C7;"></span> On sale TODAY</span>
-<span><span class="lbox" style="border:1.5px dashed #D97706;background:#FFF7ED;"></span> On sale within 7 days</span>
-<span><span class="lbox" style="border:1px solid #CBD5E1;background:#F1F5F9;"></span> On-sale date known</span>
-<span><span class="lbox" style="border:1.5px solid #639922;background:#EAF3DE;"></span> Manually added</span>
-</div>
+<div id="onsaleBanner"></div>
 <div class="filter-bar" id="filterBar"></div>
 <div class="day-labels">
 <div class="dl">Sun</div><div class="dl">Mon</div><div class="dl">Tue</div>
@@ -206,13 +202,13 @@ const BIN_NAME="seattle-concerts-flem68";
 const TM_KEY="tl7PNcx66EX7LlAGiqleRQjQenqCaoJU";
 const TM_BASE="https://app.ticketmaster.com/discovery/v2";
 const SYNC_COOLDOWN_HOURS=12;
-const VENUES=["Tractor Tavern","Sunset Tavern","Moore Theatre","The Crocodile","Barboza","El Corazon","High Dive","Triple Door","Showbox SoDo","The Clockout Lounge","Climate Pledge Arena","Paramount Theatre","The Showbox","Neumos","WaMu Theater","Neptune Theatre","Gorge Amphitheatre","Other"];
-const VC={"Tractor Tavern":{bg:"#FAEEDA",text:"#633806",dot:"#BA7517"},"Sunset Tavern":{bg:"#E1F5EE",text:"#085041",dot:"#0F6E56"},"Moore Theatre":{bg:"#EEEDFE",text:"#3C3489",dot:"#534AB7"},"The Crocodile":{bg:"#FAECE7",text:"#712B13",dot:"#D85A30"},"Barboza":{bg:"#FBEAF0",text:"#72243E",dot:"#993556"},"El Corazon":{bg:"#FCEBEB",text:"#791F1F",dot:"#E24B4A"},"High Dive":{bg:"#EAF3DE",text:"#27500A",dot:"#639922"},"Triple Door":{bg:"#E6F1FB",text:"#0C447C",dot:"#378ADD"},"Showbox SoDo":{bg:"#F1EFE8",text:"#444441",dot:"#888780"},"The Clockout Lounge":{bg:"#FAC775",text:"#412402",dot:"#854F0B"},"Climate Pledge Arena":{bg:"#B5D4F4",text:"#042C53",dot:"#185FA5"},"Paramount Theatre":{bg:"#CECBF6",text:"#26215C",dot:"#534AB7"},"The Showbox":{bg:"#9FE1CB",text:"#04342C",dot:"#1D9E75"},"Neumos":{bg:"#F4C0D1",text:"#4B1528",dot:"#D4537E"},"WaMu Theater":{bg:"#C0DD97",text:"#173404",dot:"#3B6D11"},"Neptune Theatre":{bg:"#F0997B",text:"#4A1B0C",dot:"#993C1D"},"Gorge Amphitheatre":{bg:"#85B7EB",text:"#042C53",dot:"#185FA5"},"Other":{bg:"#D3D1C7",text:"#2C2C2A",dot:"#5F5E5A"}};
+const VENUES=["Tractor Tavern","Sunset Tavern","Moore Theatre","The Crocodile","Barboza","El Corazon","High Dive","Triple Door","Showbox SoDo","The Clockout Lounge","Climate Pledge Arena","Paramount Theatre","The Showbox","Neumos","WaMu Theater","Neptune Theatre","Gorge Amphitheatre","5th Avenue Theatre","Other"];
+const VC={"Tractor Tavern":{bg:"#FAEEDA",text:"#633806",dot:"#BA7517"},"Sunset Tavern":{bg:"#E1F5EE",text:"#085041",dot:"#0F6E56"},"Moore Theatre":{bg:"#EEEDFE",text:"#3C3489",dot:"#534AB7"},"The Crocodile":{bg:"#FAECE7",text:"#712B13",dot:"#D85A30"},"Barboza":{bg:"#FBEAF0",text:"#72243E",dot:"#993556"},"El Corazon":{bg:"#FCEBEB",text:"#791F1F",dot:"#E24B4A"},"High Dive":{bg:"#EAF3DE",text:"#27500A",dot:"#639922"},"Triple Door":{bg:"#E6F1FB",text:"#0C447C",dot:"#378ADD"},"Showbox SoDo":{bg:"#F1EFE8",text:"#444441",dot:"#888780"},"The Clockout Lounge":{bg:"#FAC775",text:"#412402",dot:"#854F0B"},"Climate Pledge Arena":{bg:"#B5D4F4",text:"#042C53",dot:"#185FA5"},"Paramount Theatre":{bg:"#CECBF6",text:"#26215C",dot:"#534AB7"},"The Showbox":{bg:"#9FE1CB",text:"#04342C",dot:"#1D9E75"},"Neumos":{bg:"#F4C0D1",text:"#4B1528",dot:"#D4537E"},"WaMu Theater":{bg:"#C0DD97",text:"#173404",dot:"#3B6D11"},"Neptune Theatre":{bg:"#F0997B",text:"#4A1B0C",dot:"#993C1D"},"Gorge Amphitheatre":{bg:"#85B7EB",text:"#042C53",dot:"#185FA5"},"5th Avenue Theatre":{bg:"#FCEBEB",text:"#501313",dot:"#A32D2D"},"Other":{bg:"#D3D1C7",text:"#2C2C2A",dot:"#5F5E5A"}};
 function gc(v){return VC[v]||VC["Other"];}
 function matchVenue(tmName){
 if(!tmName)return null;
 const n=tmName.toLowerCase().trim();
-const exact={"tractor tavern":"Tractor Tavern","sunset tavern":"Sunset Tavern","moore theatre":"Moore Theatre","moore theater":"Moore Theatre","the crocodile":"The Crocodile","crocodile":"The Crocodile","barboza":"Barboza","el corazon":"El Corazon","high dive":"High Dive","triple door":"Triple Door","showbox sodo":"Showbox SoDo","showbox at the sodo":"Showbox SoDo","the clockout lounge":"The Clockout Lounge","clockout lounge":"The Clockout Lounge","climate pledge arena":"Climate Pledge Arena","paramount theatre":"Paramount Theatre","paramount theater":"Paramount Theatre","the showbox":"The Showbox","showbox":"The Showbox","neumos":"Neumos","wamu theater":"WaMu Theater","neptune theatre":"Neptune Theatre","neptune theater":"Neptune Theatre","gorge amphitheatre":"Gorge Amphitheatre","gorge amphitheater":"Gorge Amphitheatre","the gorge amphitheatre":"Gorge Amphitheatre"};
+const exact={"tractor tavern":"Tractor Tavern","sunset tavern":"Sunset Tavern","moore theatre":"Moore Theatre","moore theater":"Moore Theatre","the crocodile":"The Crocodile","crocodile":"The Crocodile","barboza":"Barboza","el corazon":"El Corazon","high dive":"High Dive","triple door":"Triple Door","showbox sodo":"Showbox SoDo","showbox at the sodo":"Showbox SoDo","the clockout lounge":"The Clockout Lounge","clockout lounge":"The Clockout Lounge","climate pledge arena":"Climate Pledge Arena","paramount theatre":"Paramount Theatre","paramount theater":"Paramount Theatre","the showbox":"The Showbox","showbox":"The Showbox","neumos":"Neumos","wamu theater":"WaMu Theater","wa mu theater":"WaMu Theater","neptune theatre":"Neptune Theatre","neptune theater":"Neptune Theatre","gorge amphitheatre":"Gorge Amphitheatre","gorge amphitheater":"Gorge Amphitheatre","the gorge amphitheatre":"Gorge Amphitheatre","5th avenue theatre":"5th Avenue Theatre","fifth avenue theatre":"5th Avenue Theatre","5th avenue theater":"5th Avenue Theatre"};
 if(exact[n])return exact[n];
 for(const[key,val]of Object.entries(exact)){if(n.includes(key))return val;}
 return null;
@@ -241,6 +237,29 @@ const now=new Date();now.setHours(0,0,0,0);
 const daysAway=Math.round((new Date(ev.onSaleDate+"T00:00:00")-now)/86400000);
 const labels={now:`🎟 Tickets ON SALE TODAY — ${dateStr}`,soon:`🎟 On sale in ${daysAway} day${daysAway!==1?"s":""} — ${dateStr}`,future:`🎟 Tickets go on sale ${dateStr}`,past:`🎟 Tickets on sale now (went on sale ${dateStr})`};
 return`<div class="det-row"><span class="onsale-badge ${status}">${labels[status]}</span></div>`;
+}
+function renderOnSaleBanner(){
+const banner=document.getElementById("onsaleBanner");
+const now=new Date();now.setHours(0,0,0,0);
+const upcoming=events.filter(ev=>{
+if(!ev.onSaleDate)return false;
+const sale=new Date(ev.onSaleDate+"T00:00:00");
+return Math.round((sale-now)/86400000)>=0;
+}).sort((a,b)=>new Date(a.onSaleDate+"T00:00:00")-new Date(b.onSaleDate+"T00:00:00"));
+if(!upcoming.length){banner.innerHTML="";return;}
+const rows=upcoming.map(ev=>{
+const status=onSaleStatus(ev);
+const now2=new Date();now2.setHours(0,0,0,0);
+const daysAway=Math.round((new Date(ev.onSaleDate+"T00:00:00")-now2)/86400000);
+const label=status==="now"?"On sale TODAY":status==="soon"?`On sale in ${daysAway} day${daysAway!==1?"s":""}`:`On sale ${fmtDate(ev.onSaleDate)}`;
+return`<div class="onsale-row" onclick="jumpToShow(${ev.id})">
+<div style="width:8px;height:8px;border-radius:50%;background:${gc(ev.venue).dot};flex-shrink:0;"></div>
+<span class="onsale-artist">${ev.artist}</span>
+<span class="onsale-venue">${ev.venue}</span>
+<span class="onsale-date-badge ${status}">${label}</span>
+</div>`;
+}).join("");
+banner.innerHTML=`<div class="onsale-banner"><div class="onsale-banner-title">🎟 Tickets going on sale soon — ${upcoming.length} show${upcoming.length!==1?"s":""}</div>${rows}</div>`;
 }
 async function runSync(auto=false){
 if(isSyncing)return;
@@ -390,6 +409,29 @@ if(curMonth>11){curMonth=0;curYear++;}
 if(curMonth<0){curMonth=11;curYear--;}
 closeDetail();renderCalendar();
 }
+function renderOnSaleBanner(){
+const banner=document.getElementById("onsaleBanner");
+const now=new Date();now.setHours(0,0,0,0);
+const upcoming=events.filter(ev=>{
+if(!ev.onSaleDate)return false;
+const sale=new Date(ev.onSaleDate+"T00:00:00");
+return Math.round((sale-now)/86400000)>=0;
+}).sort((a,b)=>new Date(a.onSaleDate+"T00:00:00")-new Date(b.onSaleDate+"T00:00:00"));
+if(!upcoming.length){banner.innerHTML="";return;}
+const rows=upcoming.map(ev=>{
+const status=onSaleStatus(ev);
+const now2=new Date();now2.setHours(0,0,0,0);
+const daysAway=Math.round((new Date(ev.onSaleDate+"T00:00:00")-now2)/86400000);
+const label=status==="now"?"On sale TODAY":status==="soon"?`On sale in ${daysAway} day${daysAway!==1?"s":""}`:`On sale ${fmtDate(ev.onSaleDate)}`;
+return`<div class="onsale-row" onclick="jumpToShow(${ev.id})">
+<div style="width:8px;height:8px;border-radius:50%;background:${gc(ev.venue).dot};flex-shrink:0;"></div>
+<span class="onsale-artist">${ev.artist}</span>
+<span class="onsale-venue">${ev.venue}</span>
+<span class="onsale-date-badge ${status}">${label}</span>
+</div>`;
+}).join("");
+banner.innerHTML=`<div class="onsale-banner"><div class="onsale-banner-title">🎟 Tickets going on sale soon — ${upcoming.length} show${upcoming.length!==1?"s":""}</div>${rows}</div>`;
+}
 function renderFilterBar(){
 const bar=document.getElementById("filterBar");bar.innerHTML="";
 const c0=document.createElement("span");
@@ -406,6 +448,7 @@ bar.appendChild(chip);
 });
 }
 function renderCalendar(){
+renderOnSaleBanner();
 document.getElementById("monthLabel").textContent=new Date(curYear,curMonth,1).toLocaleString("default",{month:"long",year:"numeric"});
 const grid=document.getElementById("calGrid");grid.innerHTML="";
 const firstDay=new Date(curYear,curMonth,1).getDay();
@@ -432,9 +475,6 @@ const c=gc(ev.venue),pill=document.createElement("a");
 pill.className="epill";
 if(trackedArtists.some(a=>ev.artist.toLowerCase().includes(a.toLowerCase())))pill.classList.add("tracked");
 if(ev.source==="manual")pill.classList.add("manual");
-const oss=onSaleStatus(ev);
-if(oss==="now")pill.classList.add("onsale-now");
-else if(oss==="soon")pill.classList.add("onsale-soon");
 pill.style.background=c.bg;pill.style.color=c.text;
 pill.textContent=ev.artist;
 pill.title=ev.artist+" @ "+ev.venue+(ev.onSaleDate?"\n🎟 On sale: "+ev.onSaleDate:"");
@@ -488,11 +528,10 @@ await saveToBin();renderRsvpBtns(id);renderRsvpFaces(id);renderFriendsFeed();
 function showDayEvents(ds,devs){
 document.getElementById("detTitle").textContent="Shows on "+fmtDate(ds);
 document.getElementById("detMeta").innerHTML=devs.map(ev=>{
-const c=gc(ev.venue);const oss=onSaleStatus(ev);
-const saleStr=oss&&oss!=="past"?` <span style="font-size:10px;color:#D97706;">🎟 ${oss==="now"?"ON SALE TODAY":oss==="soon"?"on sale soon":"on sale "+fmtDate(ev.onSaleDate)}</span>`:"";
+const c=gc(ev.venue);
 return`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:0.5px solid #f1efe8;cursor:pointer;" onclick="showDetail(${ev.id})">
 <span style="width:8px;height:8px;border-radius:50%;background:${c.dot};flex-shrink:0;display:inline-block;"></span>
-<span style="flex:1;font-weight:500;font-size:13px;">${ev.artist}${saleStr}</span>
+<span style="flex:1;font-weight:500;font-size:13px;">${ev.artist}</span>
 <span style="font-size:11px;color:#888780;">${ev.venue}</span>
 </div>`;
 }).join("");
