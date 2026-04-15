@@ -32,17 +32,6 @@ h1{font-size:22px;font-weight:500;color:#1a1a18;margin-bottom:0.25rem;}
 @keyframes spin{to{transform:rotate(360deg);}}
 .last-sync{font-size:11px;color:#b4b2a9;}
 .sync-progress{font-size:11px;color:#185FA5;}
-.onsale-banner{background:#FFF7ED;border:1.5px solid #D97706;border-radius:10px;padding:12px 16px;margin-bottom:1rem;}
-.onsale-banner-title{font-size:12px;font-weight:500;color:#92400E;margin-bottom:8px;display:flex;align-items:center;gap:6px;}
-.onsale-row{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:0.5px solid #FDE68A;cursor:pointer;}
-.onsale-row:last-child{border-bottom:none;}
-.onsale-row:hover{background:#FEF3C7;border-radius:6px;padding-left:4px;}
-.onsale-artist{font-size:13px;font-weight:500;color:#1a1a18;flex:1;}
-.onsale-venue{font-size:11px;color:#888780;}
-.onsale-date-badge{font-size:11px;font-weight:600;padding:2px 10px;border-radius:20px;white-space:nowrap;}
-.onsale-date-badge.now{background:#FEF3C7;color:#92400E;border:1px solid #D97706;}
-.onsale-date-badge.soon{background:#FFF7ED;color:#C2410C;border:1px solid #FB923C;}
-.onsale-date-badge.future{background:#F1F5F9;color:#475569;border:1px solid #CBD5E1;}
 .filter-bar{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:0.75rem;}
 .chip{font-size:11px;padding:3px 10px;border-radius:20px;border:0.5px solid #d3d1c7;cursor:pointer;color:#5f5e5a;background:#fff;white-space:nowrap;transition:box-shadow 0.1s;}
 .chip-all-active{background:#185FA5 !important;color:#B5D4F4 !important;border-color:#185FA5 !important;}
@@ -93,6 +82,7 @@ h1{font-size:22px;font-weight:500;color:#1a1a18;margin-bottom:0.25rem;}
 .artist-row:last-child{border-bottom:none;}
 .a-avatar{width:30px;height:30px;border-radius:50%;background:#EEEDFE;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;color:#3C3489;flex-shrink:0;}
 .a-name{font-size:14px;flex:1;}
+.a-meta{font-size:11px;color:#888780;}
 .a-remove{font-size:11px;color:#b4b2a9;cursor:pointer;background:none;border:none;font-family:inherit;padding:2px 6px;}
 .a-remove:hover{color:#E24B4A;}
 .add-row{display:flex;gap:8px;margin-top:12px;}
@@ -100,6 +90,9 @@ h1{font-size:22px;font-weight:500;color:#1a1a18;margin-bottom:0.25rem;}
 .add-row input:focus{border-color:#185FA5;}
 .add-row button{padding:8px 16px;border:0.5px solid #d3d1c7;border-radius:8px;cursor:pointer;background:#fff;color:#1a1a18;font-size:13px;font-family:inherit;}
 .add-row button:hover{background:#f1efe8;}
+.artist-search-result{background:#f8f7f4;border:0.5px solid #d3d1c7;border-radius:8px;padding:10px 14px;margin-top:8px;font-size:12px;display:none;}
+.artist-search-result.ok{border-color:#0F6E56;background:#E1F5EE;color:#085041;}
+.artist-search-result.err{border-color:#d3d1c7;background:#f8f7f4;color:#888780;}
 .fetch-btn{width:100%;margin-top:14px;padding:10px;border:none;border-radius:8px;background:#185FA5;color:#B5D4F4;font-size:14px;cursor:pointer;font-family:inherit;font-weight:500;}
 .fetch-btn:hover{background:#0C447C;}
 .fetch-btn:disabled{opacity:0.5;cursor:not-allowed;}
@@ -123,6 +116,28 @@ h1{font-size:22px;font-weight:500;color:#1a1a18;margin-bottom:0.25rem;}
 .sync-status.syncing{color:#185FA5;}
 .tracked-badge{font-size:10px;background:#E6F1FB;color:#0C447C;padding:1px 7px;border-radius:10px;margin-left:6px;}
 .info-banner{background:#E6F1FB;border:0.5px solid #185FA5;border-radius:8px;padding:10px 14px;font-size:12px;color:#0C447C;margin-bottom:1rem;display:flex;align-items:flex-start;gap:8px;}
+.onsale-banner{background:#FFF7ED;border:1.5px solid #D97706;border-radius:10px;padding:12px 16px;margin-bottom:1rem;}
+.onsale-banner-title{font-size:12px;font-weight:500;color:#92400E;margin-bottom:8px;}
+.onsale-row{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:0.5px solid #FDE68A;cursor:pointer;}
+.onsale-row:last-child{border-bottom:none;}
+.onsale-row:hover{background:#FEF3C7;border-radius:6px;padding-left:4px;}
+.onsale-artist{font-size:13px;font-weight:500;color:#1a1a18;flex:1;}
+.onsale-venue{font-size:11px;color:#888780;}
+.onsale-date-badge{font-size:11px;font-weight:600;padding:2px 10px;border-radius:20px;white-space:nowrap;}
+.onsale-date-badge.now{background:#FEF3C7;color:#92400E;border:1px solid #D97706;}
+.onsale-date-badge.soon{background:#FFF7ED;color:#C2410C;border:1px solid #FB923C;}
+.onsale-date-badge.future{background:#F1F5F9;color:#475569;border:1px solid #CBD5E1;}
+.newshows-banner{background:#EEEDFE;border:1.5px solid #534AB7;border-radius:10px;padding:12px 16px;margin-bottom:1rem;}
+.newshows-banner-title{font-size:12px;font-weight:500;color:#26215C;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;}
+.newshows-row{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:0.5px solid #CECBF6;cursor:pointer;}
+.newshows-row:last-child{border-bottom:none;}
+.newshows-row:hover{background:#CECBF6;border-radius:6px;padding-left:4px;}
+.newshows-artist{font-size:13px;font-weight:500;color:#1a1a18;flex:1;}
+.newshows-venue{font-size:11px;color:#888780;}
+.newshows-date{font-size:11px;font-weight:600;padding:2px 10px;border-radius:20px;background:#EEEDFE;color:#3C3489;border:1px solid #534AB7;white-space:nowrap;}
+.dismiss-btn{background:none;border:none;cursor:pointer;font-size:16px;color:#888780;line-height:1;padding:0 0 0 8px;}
+.dismiss-btn:hover{color:#444441;}
+.private-note{font-size:11px;color:#b4b2a9;background:#f8f7f4;border-radius:6px;padding:6px 10px;margin-bottom:12px;}
 </style>
 </head>
 <body>
@@ -151,6 +166,7 @@ h1{font-size:22px;font-weight:500;color:#1a1a18;margin-bottom:0.25rem;}
 <span class="last-sync" id="lastSyncLabel"></span>
 <span class="sync-progress" id="syncProgress"></span>
 </div>
+<div id="newShowsBanner"></div>
 <div id="onsaleBanner"></div>
 <div class="filter-bar" id="filterBar"></div>
 <div class="day-labels">
@@ -184,11 +200,13 @@ h1{font-size:22px;font-weight:500;color:#1a1a18;margin-bottom:0.25rem;}
 </div>
 <div id="pane-tracked" class="pane">
 <div class="section-label">Artists I follow</div>
+<div class="private-note">🔒 Your tracked artists are private to this browser — not shared with other visitors.</div>
 <div id="artistList"></div>
 <div class="add-row">
 <input type="text" id="artistInput" placeholder="Artist name..." onkeydown="if(event.key==='Enter')addArtist()">
-<button onclick="addArtist()">Add</button>
+<button id="addArtistBtn" onclick="addArtist()">Add</button>
 </div>
+<div id="artistSearchResult"></div>
 </div>
 <div id="pane-friends" class="pane">
 <div class="section-label">Upcoming shows — who's going</div>
@@ -202,6 +220,8 @@ const BIN_NAME="seattle-concerts-flem68";
 const TM_KEY="tl7PNcx66EX7LlAGiqleRQjQenqCaoJU";
 const TM_BASE="https://app.ticketmaster.com/discovery/v2";
 const SYNC_COOLDOWN_HOURS=12;
+const LS_ARTISTS="seattle-cal-artists";
+const LS_NAME="seattle-cal-name";
 const VENUES=["Tractor Tavern","Sunset Tavern","Moore Theatre","The Crocodile","Barboza","El Corazon","High Dive","Triple Door","Showbox SoDo","The Clockout Lounge","Climate Pledge Arena","Paramount Theatre","The Showbox","Neumos","WaMu Theater","Neptune Theatre","Gorge Amphitheatre","5th Avenue Theatre","Other"];
 const VC={"Tractor Tavern":{bg:"#FAEEDA",text:"#633806",dot:"#BA7517"},"Sunset Tavern":{bg:"#E1F5EE",text:"#085041",dot:"#0F6E56"},"Moore Theatre":{bg:"#EEEDFE",text:"#3C3489",dot:"#534AB7"},"The Crocodile":{bg:"#FAECE7",text:"#712B13",dot:"#D85A30"},"Barboza":{bg:"#FBEAF0",text:"#72243E",dot:"#993556"},"El Corazon":{bg:"#FCEBEB",text:"#791F1F",dot:"#E24B4A"},"High Dive":{bg:"#EAF3DE",text:"#27500A",dot:"#639922"},"Triple Door":{bg:"#E6F1FB",text:"#0C447C",dot:"#378ADD"},"Showbox SoDo":{bg:"#F1EFE8",text:"#444441",dot:"#888780"},"The Clockout Lounge":{bg:"#FAC775",text:"#412402",dot:"#854F0B"},"Climate Pledge Arena":{bg:"#B5D4F4",text:"#042C53",dot:"#185FA5"},"Paramount Theatre":{bg:"#CECBF6",text:"#26215C",dot:"#534AB7"},"The Showbox":{bg:"#9FE1CB",text:"#04342C",dot:"#1D9E75"},"Neumos":{bg:"#F4C0D1",text:"#4B1528",dot:"#D4537E"},"WaMu Theater":{bg:"#C0DD97",text:"#173404",dot:"#3B6D11"},"Neptune Theatre":{bg:"#F0997B",text:"#4A1B0C",dot:"#993C1D"},"Gorge Amphitheatre":{bg:"#85B7EB",text:"#042C53",dot:"#185FA5"},"5th Avenue Theatre":{bg:"#FCEBEB",text:"#501313",dot:"#A32D2D"},"Other":{bg:"#D3D1C7",text:"#2C2C2A",dot:"#5F5E5A"}};
 function gc(v){return VC[v]||VC["Other"];}
@@ -213,12 +233,29 @@ if(exact[n])return exact[n];
 for(const[key,val]of Object.entries(exact)){if(n.includes(key))return val;}
 return null;
 }
+function normalizeArtist(name){return name.toLowerCase().replace(/[^a-z0-9]/g,"");}
 const today=new Date();
 let curYear=today.getFullYear(),curMonth=today.getMonth();
 let activeVenue="All",addFormOpen=false;
 let events=[];
-let trackedArtists=[],rsvps={},userName="";
+let trackedArtists=[];
+let rsvps={},userName="";
 let binId=null,nextId=1000,syncTimer=null,isSyncing=false;
+let newShowsThisSession=[],newShowsDismissed=false;
+function loadTrackedArtists(){
+try{const s=localStorage.getItem(LS_ARTISTS);if(s)trackedArtists=JSON.parse(s);}catch(e){trackedArtists=[];}
+}
+function saveTrackedArtists(){localStorage.setItem(LS_ARTISTS,JSON.stringify(trackedArtists));}
+function getArtistDisplayName(a){return typeof a==="object"?a.matched||a.typed:a;}
+function getArtistTypedName(a){return typeof a==="object"?a.typed:a;}
+function isTracked(evArtist){
+return trackedArtists.some(a=>{
+const display=getArtistDisplayName(a).toLowerCase();
+const typed=getArtistTypedName(a).toLowerCase();
+const ev=evArtist.toLowerCase();
+return ev.includes(display)||ev.includes(typed)||normalizeArtist(ev)===normalizeArtist(display)||normalizeArtist(ev)===normalizeArtist(typed);
+});
+}
 function onSaleStatus(ev){
 if(!ev.onSaleDate)return null;
 const now=new Date();now.setHours(0,0,0,0);
@@ -238,13 +275,95 @@ const daysAway=Math.round((new Date(ev.onSaleDate+"T00:00:00")-now)/86400000);
 const labels={now:`🎟 Tickets ON SALE TODAY — ${dateStr}`,soon:`🎟 On sale in ${daysAway} day${daysAway!==1?"s":""} — ${dateStr}`,future:`🎟 Tickets go on sale ${dateStr}`,past:`🎟 Tickets on sale now (went on sale ${dateStr})`};
 return`<div class="det-row"><span class="onsale-badge ${status}">${labels[status]}</span></div>`;
 }
+async function tmSearchArtist(name){
+const now=new Date();
+const start=now.toISOString().replace(/\.\d+Z$/,"Z");
+const endDate=new Date(now.getFullYear(),now.getMonth()+6,now.getDate());
+const end=endDate.toISOString().replace(/\.\d+Z$/,"Z");
+const queries=[name];
+const stripped=name.replace(/\s+/g,"");
+if(stripped!==name)queries.push(stripped);
+for(const q of queries){
+try{
+const url=`${TM_BASE}/events.json?apikey=${TM_KEY}&keyword=${encodeURIComponent(q)}&city=Seattle&stateCode=WA&classificationName=music&startDateTime=${start}&endDateTime=${end}&size=10&sort=date,asc`;
+const resp=await fetch(url);if(!resp.ok)continue;
+const data=await resp.json();if(data.fault)continue;
+const batch=(data._embedded&&data._embedded.events)||[];
+const matches=batch.filter(tme=>{
+const en=normalizeArtist(tme.name||"");const qn=normalizeArtist(q);
+return en===qn||en.includes(qn)||qn.includes(en);
+});
+if(matches.length>0)return{found:true,matchedName:matches[0].name,count:matches.length,query:q};
+}catch(e){}
+}
+return{found:false};
+}
+async function checkTrackedArtists(){
+if(!trackedArtists.length)return;
+const now=new Date();
+const start=now.toISOString().replace(/\.\d+Z$/,"Z");
+const endDate=new Date(now.getFullYear(),now.getMonth()+6,now.getDate());
+const end=endDate.toISOString().replace(/\.\d+Z$/,"Z");
+const newShows=[];
+for(const artist of trackedArtists){
+const displayName=getArtistDisplayName(artist);
+const typedName=getArtistTypedName(artist);
+const queries=new Set([displayName,typedName,displayName.replace(/\s+/g,"")]);
+for(const q of queries){
+try{
+const url=`${TM_BASE}/events.json?apikey=${TM_KEY}&keyword=${encodeURIComponent(q)}&city=Seattle&stateCode=WA&classificationName=music&startDateTime=${start}&endDateTime=${end}&size=10&sort=date,asc`;
+const resp=await fetch(url);if(!resp.ok)continue;
+const data=await resp.json();if(data.fault)continue;
+const batch=(data._embedded&&data._embedded.events)||[];
+batch.forEach(tme=>{
+const evArtist=tme.name||"";
+const date=tme.dates&&tme.dates.start&&tme.dates.start.localDate;
+if(!evArtist||!date)return;
+const en=normalizeArtist(evArtist);const qn=normalizeArtist(q);
+if(!en.includes(qn)&&!qn.includes(en))return;
+const tmVenueName=(tme._embedded&&tme._embedded.venues&&tme._embedded.venues[0]&&tme._embedded.venues[0].name)||"";
+const venue=matchVenue(tmVenueName)||tmVenueName||"Other";
+let onSaleDate=null;
+try{const sd=tme.sales&&tme.sales.public&&tme.sales.public.startDateTime;if(sd)onSaleDate=sd.split("T")[0];}catch(e){}
+const ticketUrl=tme.url||null;
+let time="8:00 PM";
+try{const lt=tme.dates.start.localTime;if(lt){const[h,m]=lt.split(":");const hr=parseInt(h);time=`${hr%12||12}:${m} ${hr>=12?"PM":"AM"}`;}}catch(e){}
+const exists=events.some(e=>normalizeArtist(e.artist)===normalizeArtist(evArtist)&&e.date===date);
+if(!exists){
+const nev={id:nextId++,artist:evArtist,date,time,venue,genre:"",source:"ticketmaster"};
+if(onSaleDate)nev.onSaleDate=onSaleDate;
+if(ticketUrl)nev.ticketUrl=ticketUrl;
+events.push(nev);newShows.push(nev);
+}
+});
+}catch(e){}
+await new Promise(r=>setTimeout(r,150));
+}
+}
+if(newShows.length>0){
+newShowsThisSession=newShows;newShowsDismissed=false;
+await saveToBin();renderFilterBar();renderCalendar();
+}
+}
+function renderNewShowsBanner(){
+const banner=document.getElementById("newShowsBanner");
+if(!newShowsThisSession.length||newShowsDismissed){banner.innerHTML="";return;}
+const rows=newShowsThisSession.map(ev=>`
+<div class="newshows-row" onclick="jumpToShow(${ev.id})">
+<div style="width:8px;height:8px;border-radius:50%;background:${gc(ev.venue).dot};flex-shrink:0;"></div>
+<span class="newshows-artist">${ev.artist}</span>
+<span class="newshows-venue">${ev.venue}</span>
+<span class="newshows-date">${fmtDate(ev.date)}</span>
+</div>`).join("");
+banner.innerHTML=`<div class="newshows-banner"><div class="newshows-banner-title"><span>🎸 New show${newShowsThisSession.length!==1?"s":""} added for your tracked artists — ${newShowsThisSession.length} found</span><button class="dismiss-btn" onclick="dismissNewShows()" title="Dismiss">&#215;</button></div>${rows}</div>`;
+}
+function dismissNewShows(){newShowsDismissed=true;document.getElementById("newShowsBanner").innerHTML="";}
 function renderOnSaleBanner(){
 const banner=document.getElementById("onsaleBanner");
 const now=new Date();now.setHours(0,0,0,0);
 const upcoming=events.filter(ev=>{
 if(!ev.onSaleDate)return false;
-const sale=new Date(ev.onSaleDate+"T00:00:00");
-return Math.round((sale-now)/86400000)>=0;
+return Math.round((new Date(ev.onSaleDate+"T00:00:00")-now)/86400000)>=0;
 }).sort((a,b)=>new Date(a.onSaleDate+"T00:00:00")-new Date(b.onSaleDate+"T00:00:00"));
 if(!upcoming.length){banner.innerHTML="";return;}
 const rows=upcoming.map(ev=>{
@@ -317,8 +436,7 @@ if(tmError){
 prog.textContent="Could not reach Ticketmaster — showing cached data.";
 setTimeout(()=>{prog.textContent="";},6000);
 btn.disabled=false;btn.classList.remove("spinning");
-isSyncing=false;
-return;
+isSyncing=false;return;
 }
 const merged=[...tmEvents];
 manualEvents.forEach(me=>{
@@ -350,7 +468,7 @@ setSyncStatus("Synced","");
 }catch(e){try{await createBin();}catch(e2){setSyncStatus("Offline","");}}
 }
 async function createBin(){
-const r=await fetch(`${JSONBIN_BASE}/b`,{method:"POST",headers:{"Content-Type":"application/json","X-Master-Key":JSONBIN_KEY,"X-Bin-Name":BIN_NAME,"X-Bin-Private":"false"},body:JSON.stringify({events:[],rsvps:{},trackedArtists:[],lastSync:null})});
+const r=await fetch(`${JSONBIN_BASE}/b`,{method:"POST",headers:{"Content-Type":"application/json","X-Master-Key":JSONBIN_KEY,"X-Bin-Name":BIN_NAME,"X-Bin-Private":"false"},body:JSON.stringify({events:[],rsvps:{},lastSync:null})});
 const d=await r.json();
 binId=d.metadata&&d.metadata.id?d.metadata.id:(d.id||d._id);
 setSyncStatus("Ready","");
@@ -360,8 +478,7 @@ if(!binId)return;
 const rec=await getLatestBinRecord();
 if(rec.events&&rec.events.length){events=rec.events;if(events.length)nextId=Math.max(...events.map(e=>e.id))+1;}
 if(rec.rsvps)rsvps=rec.rsvps;
-if(rec.trackedArtists)trackedArtists=rec.trackedArtists;
-const stored=localStorage.getItem("seattle-cal-name");
+const stored=localStorage.getItem(LS_NAME);
 if(stored){userName=stored;document.getElementById("userName").value=stored;}
 updateLastSyncLabel(rec.lastSync);
 }
@@ -372,7 +489,7 @@ syncTimer=setTimeout(async()=>{
 setSyncStatus("Saving...","syncing");
 try{
 const rec=await getLatestBinRecord();
-await fetch(`${JSONBIN_BASE}/b/${binId}`,{method:"PUT",headers:{"Content-Type":"application/json","X-Master-Key":JSONBIN_KEY},body:JSON.stringify({events,rsvps,trackedArtists,lastSync:rec.lastSync||null})});
+await fetch(`${JSONBIN_BASE}/b/${binId}`,{method:"PUT",headers:{"Content-Type":"application/json","X-Master-Key":JSONBIN_KEY},body:JSON.stringify({events,rsvps,lastSync:rec.lastSync||null})});
 setSyncStatus("Synced ✓","");
 }catch(e){setSyncStatus("Sync failed","err");}
 },800);
@@ -381,7 +498,7 @@ async function saveToBinFull(lastSync){
 if(!binId)return;
 setSyncStatus("Saving...","syncing");
 try{
-await fetch(`${JSONBIN_BASE}/b/${binId}`,{method:"PUT",headers:{"Content-Type":"application/json","X-Master-Key":JSONBIN_KEY},body:JSON.stringify({events,rsvps,trackedArtists,lastSync})});
+await fetch(`${JSONBIN_BASE}/b/${binId}`,{method:"PUT",headers:{"Content-Type":"application/json","X-Master-Key":JSONBIN_KEY},body:JSON.stringify({events,rsvps,lastSync})});
 setSyncStatus("Synced ✓","");
 }catch(e){setSyncStatus("Sync failed","err");}
 }
@@ -395,7 +512,7 @@ else if(diff<60)el.textContent=`Last synced: ${diff}m ago`;
 else if(diff<1440)el.textContent=`Last synced: ${Math.floor(diff/60)}h ago`;
 else el.textContent=`Last synced: ${Math.floor(diff/1440)}d ago`;
 }
-function onNameChange(){userName=document.getElementById("userName").value.trim();localStorage.setItem("seattle-cal-name",userName);}
+function onNameChange(){userName=document.getElementById("userName").value.trim();localStorage.setItem(LS_NAME,userName);}
 function switchTab(name,el){
 document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
 document.querySelectorAll(".pane").forEach(p=>p.classList.remove("active"));
@@ -408,29 +525,6 @@ curMonth+=dir;
 if(curMonth>11){curMonth=0;curYear++;}
 if(curMonth<0){curMonth=11;curYear--;}
 closeDetail();renderCalendar();
-}
-function renderOnSaleBanner(){
-const banner=document.getElementById("onsaleBanner");
-const now=new Date();now.setHours(0,0,0,0);
-const upcoming=events.filter(ev=>{
-if(!ev.onSaleDate)return false;
-const sale=new Date(ev.onSaleDate+"T00:00:00");
-return Math.round((sale-now)/86400000)>=0;
-}).sort((a,b)=>new Date(a.onSaleDate+"T00:00:00")-new Date(b.onSaleDate+"T00:00:00"));
-if(!upcoming.length){banner.innerHTML="";return;}
-const rows=upcoming.map(ev=>{
-const status=onSaleStatus(ev);
-const now2=new Date();now2.setHours(0,0,0,0);
-const daysAway=Math.round((new Date(ev.onSaleDate+"T00:00:00")-now2)/86400000);
-const label=status==="now"?"On sale TODAY":status==="soon"?`On sale in ${daysAway} day${daysAway!==1?"s":""}`:`On sale ${fmtDate(ev.onSaleDate)}`;
-return`<div class="onsale-row" onclick="jumpToShow(${ev.id})">
-<div style="width:8px;height:8px;border-radius:50%;background:${gc(ev.venue).dot};flex-shrink:0;"></div>
-<span class="onsale-artist">${ev.artist}</span>
-<span class="onsale-venue">${ev.venue}</span>
-<span class="onsale-date-badge ${status}">${label}</span>
-</div>`;
-}).join("");
-banner.innerHTML=`<div class="onsale-banner"><div class="onsale-banner-title">🎟 Tickets going on sale soon — ${upcoming.length} show${upcoming.length!==1?"s":""}</div>${rows}</div>`;
 }
 function renderFilterBar(){
 const bar=document.getElementById("filterBar");bar.innerHTML="";
@@ -448,7 +542,7 @@ bar.appendChild(chip);
 });
 }
 function renderCalendar(){
-renderOnSaleBanner();
+renderNewShowsBanner();renderOnSaleBanner();
 document.getElementById("monthLabel").textContent=new Date(curYear,curMonth,1).toLocaleString("default",{month:"long",year:"numeric"});
 const grid=document.getElementById("calGrid");grid.innerHTML="";
 const firstDay=new Date(curYear,curMonth,1).getDay();
@@ -473,7 +567,7 @@ const devs=vis.filter(e=>e.date===ds);
 devs.slice(0,3).forEach(ev=>{
 const c=gc(ev.venue),pill=document.createElement("a");
 pill.className="epill";
-if(trackedArtists.some(a=>ev.artist.toLowerCase().includes(a.toLowerCase())))pill.classList.add("tracked");
+if(isTracked(ev.artist))pill.classList.add("tracked");
 if(ev.source==="manual")pill.classList.add("manual");
 pill.style.background=c.bg;pill.style.color=c.text;
 pill.textContent=ev.artist;
@@ -488,7 +582,7 @@ grid.appendChild(cell);
 function showDetail(id){
 const ev=events.find(e=>e.id===id);if(!ev)return;
 const c=gc(ev.venue);
-const isT=trackedArtists.some(a=>ev.artist.toLowerCase().includes(a.toLowerCase()));
+const isT=isTracked(ev.artist);
 const sourceBadge=ev.source==="manual"?`<span class="source-badge manual">✋ Manually added</span>`:`<span class="source-badge tm">✓ Verified via Ticketmaster</span>`;
 document.getElementById("detTitle").innerHTML=ev.artist+(isT?`<span class="tracked-badge">Tracked</span>`:"");
 const ticketBtn=ev.ticketUrl?`<div class="det-row"><a class="ticket-link" href="${ev.ticketUrl}" target="_blank">🎫 Buy tickets</a></div>`:"";
@@ -519,7 +613,7 @@ const i=ent.filter(([,v])=>v==="interested").map(([k])=>k);
 document.getElementById("rsvpFaces").innerHTML=[g.length?`<span class="rbadge going">${g.join(", ")} going</span>`:"",m.length?`<span class="rbadge maybe">${m.join(", ")} maybe</span>`:"",i.length?`<span class="rbadge interested">${i.join(", ")} interested</span>`:""].filter(Boolean).join("");
 }
 async function setRsvp(id,status){
-if(!userName){const n=prompt("Enter your name for RSVPs:");if(!n)return;userName=n;document.getElementById("userName").value=n;localStorage.setItem("seattle-cal-name",n);}
+if(!userName){const n=prompt("Enter your name for RSVPs:");if(!n)return;userName=n;document.getElementById("userName").value=n;localStorage.setItem(LS_NAME,n);}
 if(!rsvps[id])rsvps[id]={};
 if(rsvps[id][userName]===status)delete rsvps[id][userName];
 else rsvps[id][userName]=status;
@@ -566,16 +660,52 @@ renderFilterBar();renderCalendar();
 }
 function renderArtistList(){
 const list=document.getElementById("artistList");
-if(!trackedArtists.length){list.innerHTML=`<div class="empty">No artists tracked yet. Add names below — their shows will be highlighted on the calendar.</div>`;return;}
-list.innerHTML=trackedArtists.map((a,i)=>`<div class="artist-row"><div class="a-avatar">${a[0].toUpperCase()}</div><span class="a-name">${a}</span><button class="a-remove" onclick="removeArtist(${i})">remove</button></div>`).join("");
+if(!trackedArtists.length){list.innerHTML=`<div class="empty">No artists tracked yet. Add names below.</div>`;return;}
+list.innerHTML=trackedArtists.map((a,i)=>{
+const display=getArtistDisplayName(a);
+const typed=getArtistTypedName(a);
+const didCorrect=typeof a==="object"&&a.matched&&a.matched!==a.typed;
+const meta=didCorrect?`<div class="a-meta">you typed "${typed}"</div>`:"";
+return`<div class="artist-row">
+<div class="a-avatar">${display[0].toUpperCase()}</div>
+<div style="flex:1;"><div class="a-name">${display}</div>${meta}</div>
+<button class="a-remove" onclick="removeArtist(${i})">remove</button>
+</div>`;
+}).join("");
 }
 async function addArtist(){
-const input=document.getElementById("artistInput");const name=input.value.trim();
+const input=document.getElementById("artistInput");
+const name=input.value.trim();
 if(!name)return;
-if(!trackedArtists.includes(name)){trackedArtists.push(name);await saveToBin();}
+const alreadyTracked=trackedArtists.some(a=>normalizeArtist(getArtistDisplayName(a))===normalizeArtist(name)||normalizeArtist(getArtistTypedName(a))===normalizeArtist(name));
+if(alreadyTracked){showArtistResult(`"${name}" is already in your tracked artists.`,"err");return;}
+const btn=document.getElementById("addArtistBtn");
+btn.disabled=true;btn.textContent="Checking…";
+showArtistResult("Searching Ticketmaster for this artist…","");
+const result=await tmSearchArtist(name);
+btn.disabled=false;btn.textContent="Add";
+if(result.found){
+const entry=result.matchedName.toLowerCase()===name.toLowerCase()?name:{typed:name,matched:result.matchedName};
+trackedArtists.push(entry);saveTrackedArtists();
 input.value="";renderArtistList();renderCalendar();
+if(result.matchedName.toLowerCase()!==name.toLowerCase()){
+showArtistResult(`✓ Found as "${result.matchedName}" on Ticketmaster — tracking ${result.count} upcoming Seattle show${result.count!==1?"s":""}.`,"ok");
+}else{
+showArtistResult(`✓ Found on Ticketmaster — tracking ${result.count} upcoming Seattle show${result.count!==1?"s":""}.`,"ok");
 }
-async function removeArtist(i){trackedArtists.splice(i,1);await saveToBin();renderArtistList();renderCalendar();}
+}else{
+trackedArtists.push(name);saveTrackedArtists();
+input.value="";renderArtistList();renderCalendar();
+showArtistResult(`Added "${name}" — no upcoming Seattle shows found on Ticketmaster right now, but you'll be notified if any are announced.`,"err");
+}
+}
+function showArtistResult(msg,type){
+const el=document.getElementById("artistSearchResult");
+el.textContent=msg;el.className="artist-search-result"+(type?" "+type:"");
+el.style.display="block";
+if(type==="ok")setTimeout(()=>{el.style.display="none";},5000);
+}
+async function removeArtist(i){trackedArtists.splice(i,1);saveTrackedArtists();renderArtistList();renderCalendar();}
 function renderFriendsFeed(){
 const feed=document.getElementById("friendsFeed");
 const ids=Object.keys(rsvps).map(Number);
@@ -604,7 +734,12 @@ renderCalendar();showDetail(id);
 }
 function populateVenueSelect(){VENUES.forEach(v=>{const o=document.createElement("option");o.value=v;o.textContent=v;document.getElementById("fVenue").appendChild(o);});}
 populateVenueSelect();
-initStorage().then(()=>{renderFilterBar();renderCalendar();renderArtistList();setTimeout(()=>runSync(true),2000);});
+loadTrackedArtists();
+initStorage().then(async()=>{
+renderFilterBar();renderCalendar();renderArtistList();
+await runSync(true);
+if(trackedArtists.length){await checkTrackedArtists();}
+});
 setInterval(async()=>{if(binId){await loadFromBin();renderCalendar();renderFriendsFeed();}},120000);
 </script>
 </body>
