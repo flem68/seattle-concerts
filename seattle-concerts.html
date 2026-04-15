@@ -438,20 +438,73 @@ setTimeout(()=>{prog.textContent="";},6000);
 btn.disabled=false;btn.classList.remove("spinning");
 isSyncing=false;return;
 }
-const merged=[...tmEvents];
+prog.textContent="Fetching Tractor Tavern from TicketWeb…";
+const twEvents=await fetchTicketWeb();
+const allVerified=[...tmEvents];
+twEvents.forEach(tw=>{
+const dup=allVerified.some(e=>normalizeArtist(e.artist)===normalizeArtist(tw.artist)&&e.date===tw.date);
+if(!dup)allVerified.push(tw);
+});
+const merged=[...allVerified];
 manualEvents.forEach(me=>{
-const dup=tmEvents.some(te=>te.artist.toLowerCase()===me.artist.toLowerCase()&&te.date===me.date);
+const dup=allVerified.some(e=>normalizeArtist(e.artist)===normalizeArtist(me.artist)&&e.date===me.date);
 if(!dup)merged.push(me);
 });
 events=merged;
 const nowTs=new Date().toISOString();
 await saveToBinFull(nowTs);
 updateLastSyncLabel(nowTs);
-prog.textContent=`✓ ${tmEvents.length} verified show${tmEvents.length!==1?"s":""} loaded from Ticketmaster`;
+prog.textContent=`✓ ${allVerified.length} verified show${allVerified.length!==1?"s":""} loaded (${tmEvents.length} Ticketmaster + ${twEvents.length} Tractor Tavern)`;
 setTimeout(()=>{prog.textContent="";},8000);
 renderFilterBar();renderCalendar();
 btn.disabled=false;btn.classList.remove("spinning");
 isSyncing=false;
+}
+async function fetchTicketWeb(){
+const venueIds=["718323","18807"];
+const results=[];
+const now=new Date();
+const nowStr=now.toISOString().split("T")[0];
+for(const venueId of venueIds){
+try{
+const url=`https://www.ticketweb.com/api/events?version=1&method=json&venueId=${venueId}&pageSize=100`;
+const resp=await fetch(url);
+if(!resp.ok)continue;
+const data=await resp.json();
+const evList=(data.events)||[];
+evList.forEach(twe=>{
+const dateRaw=twe.startDateTime||twe.startDate||"";
+if(!dateRaw)return;
+const date=dateRaw.split("T")[0];
+if(!date||date<nowStr)return;
+const artist=twe.name||twe.eventName||"";
+if(!artist)return;
+const twVenueName=(twe.venue&&twe.venue.name)||"Tractor Tavern";
+const venue=matchVenue(twVenueName)||"Tractor Tavern";
+let time="8:00 PM";
+try{
+if(dateRaw.includes("T")){
+const[,t]=dateRaw.split("T");
+const[h,m]=t.split(":");
+const hr=parseInt(h);
+time=`${hr%12||12}:${m} ${hr>=12?"PM":"AM"}`;
+}
+}catch(e){}
+const ticketUrl=twe.url||twe.eventUrl||null;
+let onSaleDate=null;
+try{const sd=twe.onsaleDateTime||twe.onSaleDate;if(sd)onSaleDate=sd.split("T")[0];}catch(e){}
+const already=results.some(e=>normalizeArtist(e.artist)===normalizeArtist(artist)&&e.date===date);
+if(!already){
+const ev={id:nextId++,artist,date,time,venue,genre:"",source:"ticketmaster"};
+if(onSaleDate)ev.onSaleDate=onSaleDate;
+if(ticketUrl)ev.ticketUrl=ticketUrl;
+results.push(ev);
+}
+});
+}catch(e){console.warn("TicketWeb error:",e);}
+await new Promise(r=>setTimeout(r,200));
+}
+return results;
 }
 async function getLatestBinRecord(){
 if(!binId)return{};
