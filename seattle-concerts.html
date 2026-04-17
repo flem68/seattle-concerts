@@ -600,18 +600,34 @@ async function getLatestBinRecord(){
 }
 async function initStorage(){
   setSyncStatus("Connecting...","syncing");
+  // Check localStorage for a saved bin ID first
+  const savedBinId=localStorage.getItem("seattle-cal-binid");
+  if(savedBinId){
+    binId=savedBinId;
+    try{await loadFromBin();setSyncStatus("Synced","");return;}catch(e){binId=null;}
+  }
+  // Fall back to collection lookup
   try{
     const search=await fetch(`${JSONBIN_BASE}/b?collectionName=${BIN_NAME}`,{headers:{"X-Master-Key":JSONBIN_KEY}});
     const sdata=await search.json();
-    if(sdata&&sdata.length>0){binId=sdata[0].id||sdata[0]._id;await loadFromBin();}
-    else{await createBin();}
+    if(sdata&&Array.isArray(sdata)&&sdata.length>0){
+      binId=sdata[0].id||sdata[0]._id;
+      localStorage.setItem("seattle-cal-binid",binId);
+      await loadFromBin();
+    } else {
+      await createBin();
+    }
     setSyncStatus("Synced","");
-  }catch(e){try{await createBin();}catch(e2){setSyncStatus("Offline","");}}
+  }catch(e){
+    try{await createBin();}
+    catch(e2){setSyncStatus("Offline","");}
+  }
 }
 async function createBin(){
   const r=await fetch(`${JSONBIN_BASE}/b`,{method:"POST",headers:{"Content-Type":"application/json","X-Master-Key":JSONBIN_KEY,"X-Bin-Name":BIN_NAME,"X-Bin-Private":"false"},body:JSON.stringify({events:[],rsvps:{},lastSync:null})});
   const d=await r.json();
   binId=d.metadata&&d.metadata.id?d.metadata.id:(d.id||d._id);
+  if(binId)localStorage.setItem("seattle-cal-binid",binId);
   setSyncStatus("Ready","");
 }
 async function loadFromBin(){
