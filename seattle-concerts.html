@@ -446,7 +446,8 @@ async function runSync(auto=false){
   if(auto){
     const rec=await getLatestBinRecord();
     const last=rec&&rec.lastSync;
-    if(last&&(Date.now()-new Date(last).getTime())/3600000<SYNC_COOLDOWN_HOURS){updateLastSyncLabel(last);return;}
+    const hasEvents=rec&&rec.events&&rec.events.length>0;
+    if(last&&hasEvents&&(Date.now()-new Date(last).getTime())/3600000<SYNC_COOLDOWN_HOURS){updateLastSyncLabel(last);return;}
   }
   isSyncing=true;
   const btn=document.getElementById("venueSyncBtn");
@@ -500,34 +501,17 @@ async function runSync(auto=false){
     isSyncing=false;
     return;
   }
-  // Step 2: TicketWeb direct query for Tractor Tavern
-  prog.textContent="Fetching Tractor Tavern from TicketWeb…";
-  const twEvents=await fetchTicketWeb();
-
-  // Step 3: Direct venue ID queries for Gorge + Chateau
-  prog.textContent="Fetching Gorge & Chateau Ste. Michelle…";
-  const venueEvents=await fetchByVenueIds(["122913","122914"]);
-
-  // Merge all sources — TM first, then TW, then venue-direct, then manual
-  const allVerified=[...tmEvents];
-  twEvents.forEach(tw=>{
-    const dup=allVerified.some(e=>normalizeArtist(e.artist)===normalizeArtist(tw.artist)&&e.date===tw.date);
-    if(!dup)allVerified.push(tw);
-  });
-  venueEvents.forEach(ve=>{
-    const dup=allVerified.some(e=>normalizeArtist(e.artist)===normalizeArtist(ve.artist)&&e.date===ve.date);
-    if(!dup)allVerified.push(ve);
-  });
-  const merged=[...allVerified];
+  // Merge TM events with manual events
+  const merged=[...tmEvents];
   manualEvents.forEach(me=>{
-    const dup=allVerified.some(e=>normalizeArtist(e.artist)===normalizeArtist(me.artist)&&e.date===me.date);
+    const dup=tmEvents.some(te=>normalizeArtist(te.artist)===normalizeArtist(me.artist)&&te.date===me.date);
     if(!dup)merged.push(me);
   });
   events=merged;
   const nowTs=new Date().toISOString();
   await saveToBinFull(nowTs);
   updateLastSyncLabel(nowTs);
-  prog.textContent=`✓ ${allVerified.length} verified show${allVerified.length!==1?"s":""} loaded (${tmEvents.length} Ticketmaster + ${twEvents.length} Tractor Tavern + ${venueEvents.length} Gorge/Chateau)`;
+  prog.textContent=`✓ ${tmEvents.length} verified show${tmEvents.length!==1?"s":""} loaded from Ticketmaster`;
   setTimeout(()=>{prog.textContent="";},8000);
   renderFilterBar();renderCalendar();
   btn.disabled=false;btn.classList.remove("spinning");
