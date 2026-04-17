@@ -462,7 +462,7 @@ async function runSync(auto=false){
   let tmError=false;
   try{
     for(let p=0;p<5;p++){
-      const url=`${TM_BASE}/events.json?apikey=${TM_KEY}&city=Seattle&stateCode=WA&classificationName=music&source=ticketmaster,ticketweb,universe,frontgate,moshtix&startDateTime=${start}&endDateTime=${end}&size=100&page=${p}&sort=date,asc`;
+      const url=`${TM_BASE}/events.json?apikey=${TM_KEY}&dmaId=819&stateCode=WA&classificationName=music&source=ticketmaster,ticketweb,universe,frontgate,moshtix&startDateTime=${start}&endDateTime=${end}&size=100&page=${p}&sort=date,asc`;
       const resp=await fetch(url);
       if(!resp.ok){tmError=true;break;}
       const data=await resp.json();
