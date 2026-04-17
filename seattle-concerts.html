@@ -536,7 +536,7 @@ async function fetchTicketWeb(){
 
   for(const venueId of venueIds){
     try{
-      const url=`https://www.ticketweb.com/api/events?version=1&method=json&venueId=${venueId}&pageSize=100`;
+      const url=`https://corsproxy.io/?url=${encodeURIComponent("https://www.ticketweb.com/api/events?version=1&method=json&venueId="+venueId+"&pageSize=100")}`;
       const resp=await fetch(url);
       if(!resp.ok)continue;
       const data=await resp.json();
