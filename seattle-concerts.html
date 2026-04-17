@@ -462,7 +462,7 @@ async function runSync(auto=false){
   let tmError=false;
   try{
     for(let p=0;p<5;p++){
-      const url=`${TM_BASE}/events.json?apikey=${TM_KEY}&dmaId=819&stateCode=WA&classificationName=music&source=ticketmaster,ticketweb,universe,frontgate,moshtix&startDateTime=${start}&endDateTime=${end}&size=100&page=${p}&sort=date,asc`;
+      const url=`${TM_BASE}/events.json?apikey=${TM_KEY}&city=Seattle&stateCode=WA&classificationName=music&source=ticketmaster,ticketweb,universe,frontgate,moshtix&startDateTime=${start}&endDateTime=${end}&size=100&page=${p}&sort=date,asc`;
       const resp=await fetch(url);
       if(!resp.ok){tmError=true;break;}
       const data=await resp.json();
@@ -504,11 +504,19 @@ async function runSync(auto=false){
   prog.textContent="Fetching Tractor Tavern from TicketWeb…";
   const twEvents=await fetchTicketWeb();
 
-  // Merge all sources — TM first, then TW (skip dupes), then manual
+  // Step 3: Direct venue ID queries for Gorge + Chateau
+  prog.textContent="Fetching Gorge & Chateau Ste. Michelle…";
+  const venueEvents=await fetchByVenueIds(["122913","122914"]);
+
+  // Merge all sources — TM first, then TW, then venue-direct, then manual
   const allVerified=[...tmEvents];
   twEvents.forEach(tw=>{
     const dup=allVerified.some(e=>normalizeArtist(e.artist)===normalizeArtist(tw.artist)&&e.date===tw.date);
     if(!dup)allVerified.push(tw);
+  });
+  venueEvents.forEach(ve=>{
+    const dup=allVerified.some(e=>normalizeArtist(e.artist)===normalizeArtist(ve.artist)&&e.date===ve.date);
+    if(!dup)allVerified.push(ve);
   });
   const merged=[...allVerified];
   manualEvents.forEach(me=>{
@@ -519,11 +527,51 @@ async function runSync(auto=false){
   const nowTs=new Date().toISOString();
   await saveToBinFull(nowTs);
   updateLastSyncLabel(nowTs);
-  prog.textContent=`✓ ${allVerified.length} verified show${allVerified.length!==1?"s":""} loaded (${tmEvents.length} Ticketmaster + ${twEvents.length} Tractor Tavern)`;
+  prog.textContent=`✓ ${allVerified.length} verified show${allVerified.length!==1?"s":""} loaded (${tmEvents.length} Ticketmaster + ${twEvents.length} Tractor Tavern + ${venueEvents.length} Gorge/Chateau)`;
   setTimeout(()=>{prog.textContent="";},8000);
   renderFilterBar();renderCalendar();
   btn.disabled=false;btn.classList.remove("spinning");
   isSyncing=false;
+}
+
+// ── Ticketmaster venue ID direct fetch (for Gorge + Chateau) ─────────────
+async function fetchByVenueIds(venueIds){
+  const results=[];
+  const now=new Date();
+  const start=now.toISOString().replace(/\.\d+Z$/,"Z");
+  const endDate=new Date(now.getFullYear(),now.getMonth()+5,now.getDate());
+  const end=endDate.toISOString().replace(/\.\d+Z$/,"Z");
+  for(const venueId of venueIds){
+    try{
+      const url=`${TM_BASE}/events.json?apikey=${TM_KEY}&venueId=${venueId}&classificationName=music&startDateTime=${start}&endDateTime=${end}&size=100&sort=date,asc`;
+      const resp=await fetch(url);
+      if(!resp.ok)continue;
+      const data=await resp.json();
+      if(data.fault)continue;
+      const batch=(data._embedded&&data._embedded.events)||[];
+      batch.forEach(tme=>{
+        const artist=tme.name||"";
+        const date=tme.dates&&tme.dates.start&&tme.dates.start.localDate;
+        if(!artist||!date)return;
+        const tmVenueName=(tme._embedded&&tme._embedded.venues&&tme._embedded.venues[0]&&tme._embedded.venues[0].name)||"";
+        const venue=matchVenue(tmVenueName)||tmVenueName||"Other";
+        let onSaleDate=null;
+        try{const sd=tme.sales&&tme.sales.public&&tme.sales.public.startDateTime;if(sd)onSaleDate=sd.split("T")[0];}catch(e){}
+        const ticketUrl=tme.url||null;
+        let time="8:00 PM";
+        try{const lt=tme.dates.start.localTime;if(lt){const[h,m]=lt.split(":");const hr=parseInt(h);time=`${hr%12||12}:${m} ${hr>=12?"PM":"AM"}`;}}catch(e){}
+        const already=results.some(e=>normalizeArtist(e.artist)===normalizeArtist(artist)&&e.date===date);
+        if(!already){
+          const ev={id:nextId++,artist,date,time,venue,genre:"",source:"ticketmaster"};
+          if(onSaleDate)ev.onSaleDate=onSaleDate;
+          if(ticketUrl)ev.ticketUrl=ticketUrl;
+          results.push(ev);
+        }
+      });
+    }catch(e){}
+    await new Promise(r=>setTimeout(r,300));
+  }
+  return results;
 }
 
 // ── TicketWeb direct fetch for Tractor Tavern ────────────────────────────
