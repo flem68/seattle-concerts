@@ -298,16 +298,19 @@ async function fetchVenueById(venueId,fallbackVenue){
   const end=endDate.toISOString().replace(/\.\d+Z$/,"Z");
   try{
     const url=`${TM_BASE}/events.json?apikey=${TM_KEY}&venueId=${venueId}&classificationName=music&startDateTime=${start}&endDateTime=${end}&size=100&sort=date,asc`;
+    console.log("fetchVenueById calling:",url.replace(TM_KEY,"***"));
     const resp=await fetch(url);
+    console.log("fetchVenueById",venueId,"status:",resp.status);
     if(!resp.ok)return results;
     const data=await resp.json();
-    if(data.fault)return results;
+    if(data.fault){console.log("fetchVenueById fault:",data.fault);return results;}
     const batch=(data._embedded&&data._embedded.events)||[];
+    console.log("fetchVenueById",venueId,fallbackVenue,"events:",batch.length);
     batch.forEach(tme=>{
       const ev=parseTmEvent(tme,fallbackVenue);
       if(ev&&!results.some(e=>normalizeArtist(e.artist)===normalizeArtist(ev.artist)&&e.date===ev.date))results.push(ev);
     });
-  }catch(e){}
+  }catch(e){console.log("fetchVenueById error",venueId,e.message);}
   return results;
 }
 
