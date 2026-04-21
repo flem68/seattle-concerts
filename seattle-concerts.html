@@ -216,7 +216,7 @@ const TM_BASE="https://app.ticketmaster.com/discovery/v2";
 const SYNC_COOLDOWN_HOURS=12;
 const LS_ARTISTS="seattle-cal-artists";
 const LS_NAME="seattle-cal-name";
-const BIN_ID="69e1bb9c36566621a8c14188";
+const BIN_ID="69e7ac8caaba8821972230df";
 
 const VENUES=["Tractor Tavern","Sunset Tavern","Moore Theatre","The Crocodile","Barboza","El Corazon","High Dive","Triple Door","Showbox SoDo","The Clockout Lounge","Climate Pledge Arena","Paramount Theatre","The Showbox","Neumos","WaMu Theater","Neptune Theatre","Gorge Amphitheatre","5th Avenue Theatre","Chateau Ste. Michelle","Chop Suey","Zoo Tunes","Remlinger Farms","Other"];
 const VC={"Tractor Tavern":{bg:"#FAEEDA",text:"#633806",dot:"#BA7517"},"Sunset Tavern":{bg:"#E1F5EE",text:"#085041",dot:"#0F6E56"},"Moore Theatre":{bg:"#EEEDFE",text:"#3C3489",dot:"#534AB7"},"The Crocodile":{bg:"#FAECE7",text:"#712B13",dot:"#D85A30"},"Barboza":{bg:"#FBEAF0",text:"#72243E",dot:"#993556"},"El Corazon":{bg:"#FCEBEB",text:"#791F1F",dot:"#E24B4A"},"High Dive":{bg:"#EAF3DE",text:"#27500A",dot:"#639922"},"Triple Door":{bg:"#E6F1FB",text:"#0C447C",dot:"#378ADD"},"Showbox SoDo":{bg:"#F1EFE8",text:"#444441",dot:"#888780"},"The Clockout Lounge":{bg:"#FAC775",text:"#412402",dot:"#854F0B"},"Climate Pledge Arena":{bg:"#B5D4F4",text:"#042C53",dot:"#185FA5"},"Paramount Theatre":{bg:"#CECBF6",text:"#26215C",dot:"#534AB7"},"The Showbox":{bg:"#9FE1CB",text:"#04342C",dot:"#1D9E75"},"Neumos":{bg:"#F4C0D1",text:"#4B1528",dot:"#D4537E"},"WaMu Theater":{bg:"#C0DD97",text:"#173404",dot:"#3B6D11"},"Neptune Theatre":{bg:"#F0997B",text:"#4A1B0C",dot:"#993C1D"},"Gorge Amphitheatre":{bg:"#85B7EB",text:"#042C53",dot:"#185FA5"},"5th Avenue Theatre":{bg:"#FCEBEB",text:"#501313",dot:"#A32D2D"},"Chateau Ste. Michelle":{bg:"#EAF3DE",text:"#1A3D0A",dot:"#4A8C1C"},"Chop Suey":{bg:"#FAECE7",text:"#5C1A0A",dot:"#C24E2A"},"Zoo Tunes":{bg:"#E6F4FB",text:"#0A3A52",dot:"#1A7FA8"},"Remlinger Farms":{bg:"#FEF3C7",text:"#78350F",dot:"#D97706"},"Other":{bg:"#D3D1C7",text:"#2C2C2A",dot:"#5F5E5A"}};
@@ -305,10 +305,6 @@ async function fetchVenueById(venueName,fallbackVenue){
     if(data.fault)return results;
     const batch=(data._embedded&&data._embedded.events)||[];
     batch.forEach(tme=>{
-      // Only include if the event is actually at this venue
-      const tmVenueName=(tme._embedded&&tme._embedded.venues&&tme._embedded.venues[0]&&tme._embedded.venues[0].name)||"" ;
-      const matched=matchVenue(tmVenueName);
-      if(matched!==fallbackVenue)return;
       const ev=parseTmEvent(tme,fallbackVenue);
       if(ev&&!results.some(e=>normalizeArtist(e.artist)===normalizeArtist(ev.artist)&&e.date===ev.date))results.push(ev);
     });
