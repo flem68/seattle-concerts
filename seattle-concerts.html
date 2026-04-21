@@ -290,27 +290,29 @@ function parseTmEvent(tme,fallbackVenue){
   return ev;
 }
 
-async function fetchVenueById(venueId,fallbackVenue){
+async function fetchVenueById(venueName,fallbackVenue){
+  // Search by venue keyword — more reliable than numeric venue IDs
   const results=[];
   const now=new Date();
   const start=now.toISOString().replace(/\.\d+Z$/,"Z");
   const endDate=new Date(now.getFullYear(),now.getMonth()+5,now.getDate());
   const end=endDate.toISOString().replace(/\.\d+Z$/,"Z");
   try{
-    const url=`${TM_BASE}/events.json?apikey=${TM_KEY}&venueId=${venueId}&classificationName=music&startDateTime=${start}&endDateTime=${end}&size=100&sort=date,asc`;
-    console.log("fetchVenueById calling:",url.replace(TM_KEY,"***"));
+    const url=`${TM_BASE}/events.json?apikey=${TM_KEY}&keyword=${encodeURIComponent(venueName)}&stateCode=WA&classificationName=music&startDateTime=${start}&endDateTime=${end}&size=100&sort=date,asc`;
     const resp=await fetch(url);
-    console.log("fetchVenueById",venueId,"status:",resp.status);
     if(!resp.ok)return results;
     const data=await resp.json();
-    if(data.fault){console.log("fetchVenueById fault:",data.fault);return results;}
+    if(data.fault)return results;
     const batch=(data._embedded&&data._embedded.events)||[];
-    console.log("fetchVenueById",venueId,fallbackVenue,"events:",batch.length);
     batch.forEach(tme=>{
+      // Only include if the event is actually at this venue
+      const tmVenueName=(tme._embedded&&tme._embedded.venues&&tme._embedded.venues[0]&&tme._embedded.venues[0].name)||"" ;
+      const matched=matchVenue(tmVenueName);
+      if(matched!==fallbackVenue)return;
       const ev=parseTmEvent(tme,fallbackVenue);
       if(ev&&!results.some(e=>normalizeArtist(e.artist)===normalizeArtist(ev.artist)&&e.date===ev.date))results.push(ev);
     });
-  }catch(e){console.log("fetchVenueById error",venueId,e.message);}
+  }catch(e){}
   return results;
 }
 
@@ -429,12 +431,12 @@ async function runSync(auto=false){
   // Step 2: Direct venue ID queries for Gorge, Chateau, Remlinger
   prog.textContent="Fetching Gorge, Chateau & Remlinger Farms…";
   const extraVenues=[
-    {id:"122913",name:"Gorge Amphitheatre"},
-    {id:"122914",name:"Chateau Ste. Michelle"},
-    {id:"124019",name:"Remlinger Farms"}
+    {keyword:"Gorge Amphitheatre",name:"Gorge Amphitheatre"},
+    {keyword:"Chateau Ste Michelle",name:"Chateau Ste. Michelle"},
+    {keyword:"Remlinger Farms",name:"Remlinger Farms"}
   ];
   for(const v of extraVenues){
-    const vevents=await fetchVenueById(v.id,v.name);
+    const vevents=await fetchVenueById(v.keyword,v.name);
     vevents.forEach(ve=>{
       if(!tmEvents.some(e=>normalizeArtist(e.artist)===normalizeArtist(ve.artist)&&e.date===ve.date))tmEvents.push(ve);
     });
