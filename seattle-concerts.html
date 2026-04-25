@@ -217,6 +217,7 @@ const SYNC_COOLDOWN_HOURS=12;
 const LS_ARTISTS="seattle-cal-artists";
 const LS_NAME="seattle-cal-name";
 const BIN_ID="69e7ac8caaba8821972230df";
+const TRACTOR_WORKER="https://tractor-proxy.paul-7ec.workers.dev";
 
 const VENUES=["Tractor Tavern","Sunset Tavern","Moore Theatre","The Crocodile","Barboza","El Corazon","High Dive","Triple Door","Showbox SoDo","The Clockout Lounge","Climate Pledge Arena","Paramount Theatre","The Showbox","Neumos","WaMu Theater","Neptune Theatre","Gorge Amphitheatre","5th Avenue Theatre","Chateau Ste. Michelle","Chop Suey","Zoo Tunes","Remlinger Farms","Other"];
 const VC={"Tractor Tavern":{bg:"#FAEEDA",text:"#633806",dot:"#BA7517"},"Sunset Tavern":{bg:"#E1F5EE",text:"#085041",dot:"#0F6E56"},"Moore Theatre":{bg:"#EEEDFE",text:"#3C3489",dot:"#534AB7"},"The Crocodile":{bg:"#FAECE7",text:"#712B13",dot:"#D85A30"},"Barboza":{bg:"#FBEAF0",text:"#72243E",dot:"#993556"},"El Corazon":{bg:"#FCEBEB",text:"#791F1F",dot:"#E24B4A"},"High Dive":{bg:"#EAF3DE",text:"#27500A",dot:"#639922"},"Triple Door":{bg:"#E6F1FB",text:"#0C447C",dot:"#378ADD"},"Showbox SoDo":{bg:"#F1EFE8",text:"#444441",dot:"#888780"},"The Clockout Lounge":{bg:"#FAC775",text:"#412402",dot:"#854F0B"},"Climate Pledge Arena":{bg:"#B5D4F4",text:"#042C53",dot:"#185FA5"},"Paramount Theatre":{bg:"#CECBF6",text:"#26215C",dot:"#534AB7"},"The Showbox":{bg:"#9FE1CB",text:"#04342C",dot:"#1D9E75"},"Neumos":{bg:"#F4C0D1",text:"#4B1528",dot:"#D4537E"},"WaMu Theater":{bg:"#C0DD97",text:"#173404",dot:"#3B6D11"},"Neptune Theatre":{bg:"#F0997B",text:"#4A1B0C",dot:"#993C1D"},"Gorge Amphitheatre":{bg:"#85B7EB",text:"#042C53",dot:"#185FA5"},"5th Avenue Theatre":{bg:"#FCEBEB",text:"#501313",dot:"#A32D2D"},"Chateau Ste. Michelle":{bg:"#EAF3DE",text:"#1A3D0A",dot:"#4A8C1C"},"Chop Suey":{bg:"#FAECE7",text:"#5C1A0A",dot:"#C24E2A"},"Zoo Tunes":{bg:"#E6F4FB",text:"#0A3A52",dot:"#1A7FA8"},"Remlinger Farms":{bg:"#FEF3C7",text:"#78350F",dot:"#D97706"},"Other":{bg:"#D3D1C7",text:"#2C2C2A",dot:"#5F5E5A"}};
@@ -309,6 +310,46 @@ async function fetchVenueById(venueName,fallbackVenue){
       if(ev&&!results.some(e=>normalizeArtist(e.artist)===normalizeArtist(ev.artist)&&e.date===ev.date))results.push(ev);
     });
   }catch(e){}
+  return results;
+}
+
+async function fetchTractorTavern(){
+  const results=[];
+  const now=new Date();
+  const nowStr=now.toISOString().split("T")[0];
+  try{
+    const resp=await fetch(TRACTOR_WORKER);
+    if(!resp.ok)return results;
+    const data=await resp.json();
+    const evList=data.events||[];
+    evList.forEach(twe=>{
+      const dateRaw=twe.startDateTime||"";
+      if(!dateRaw)return;
+      const date=dateRaw.split("T")[0];
+      if(!date||date<nowStr)return;
+      // Determine actual venue from event name
+      let artist=twe.name||"";
+      if(!artist)return;
+      // Decode HTML entities
+      artist=artist.replace(/&amp;/g,"&").replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&#39;/g,"'").replace(/&quot;/g,'"');
+      // Determine venue - events presented AT another venue go there
+      let venue="Tractor Tavern";
+      const lc=artist.toLowerCase();
+      if(lc.includes("at the sunset"))venue="Sunset Tavern";
+      else if(lc.includes("at the clock-out")||lc.includes("at clock-out"))venue="The Clockout Lounge";
+      else if(lc.includes("at conor byrne"))venue="Other";
+      else if(lc.includes("at the fremont abbey"))venue="Other";
+      let time="8:00 PM";
+      try{if(dateRaw.includes("T")){const[,t]=dateRaw.split("T");const[h,m]=t.split(":");const hr=parseInt(h);time=`${hr%12||12}:${m} ${hr>=12?"PM":"AM"}`;}}catch(e){}
+      const ticketUrl=twe.url||null;
+      const already=results.some(e=>normalizeArtist(e.artist)===normalizeArtist(artist)&&e.date===date);
+      if(!already){
+        const ev={id:nextId++,artist,date,time,venue,genre:"",source:"ticketmaster"};
+        if(ticketUrl)ev.ticketUrl=ticketUrl;
+        results.push(ev);
+      }
+    });
+  }catch(e){console.warn("Tractor Worker error:",e.message);}
   return results;
 }
 
@@ -424,7 +465,14 @@ async function runSync(auto=false){
     btn.disabled=false;btn.classList.remove("spinning");isSyncing=false;return;
   }
 
-  // Step 2: Direct venue ID queries for Gorge, Chateau, Remlinger
+  // Step 2: Tractor Tavern via Cloudflare Worker
+  prog.textContent="Fetching Tractor Tavern…";
+  const tractorEvents=await fetchTractorTavern();
+  tractorEvents.forEach(te=>{
+    if(!tmEvents.some(e=>normalizeArtist(e.artist)===normalizeArtist(te.artist)&&e.date===te.date))tmEvents.push(te);
+  });
+
+  // Step 3: Direct venue ID queries for Gorge, Chateau, Remlinger
   prog.textContent="Fetching Gorge, Chateau & Remlinger Farms…";
   const extraVenues=[
     {keyword:"Gorge Amphitheatre",name:"Gorge Amphitheatre"},
