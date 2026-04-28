@@ -237,37 +237,20 @@ const today=new Date();
 let curYear=today.getFullYear(),curMonth=today.getMonth();
 let activeVenue="All",addFormOpen=false;
 let events=[];
-let allTrackedArtists={};  // keyed by name: {"Paul":["Beck","Kevin Morby"],"Friend":["BTS"]}
-let trackedArtists=[];     // current user's artists — derived from allTrackedArtists[userName]
+let trackedArtists=[];
 let rsvps={},userName="";
 let nextId=1000,syncTimer=null,isSyncing=false,lastSyncTs=null;
 
-function getMyArtists(){
-  if(!userName)return[];
-  return allTrackedArtists[userName]||[];
+function syncTrackedArtists(){ /* no-op, localStorage handles this */ }
+function loadTrackedArtists(){
+  try{const s=localStorage.getItem("seattle-cal-artists");if(s)trackedArtists=JSON.parse(s);}catch(e){trackedArtists=[];}
 }
-function syncTrackedArtists(){
-  // Keep trackedArtists in sync with current user's list
-  trackedArtists=getMyArtists();
-}
-async function saveTrackedArtists(){
-  if(userName)allTrackedArtists[userName]=trackedArtists;
-  await saveToBin();
+function saveTrackedArtists(){
+  localStorage.setItem("seattle-cal-artists",JSON.stringify(trackedArtists));
 }
 function getArtistDisplayName(a){return typeof a==="object"?a.matched||a.typed:a;}
 function getArtistTypedName(a){return typeof a==="object"?a.typed:a;}
 function isTracked(evArtist){
-  // Show blue outline for ANY user's tracked artists
-  const allArtists=Object.values(allTrackedArtists).flat();
-  return allArtists.some(a=>{
-    const display=getArtistDisplayName(a).toLowerCase();
-    const typed=getArtistTypedName(a).toLowerCase();
-    const ev=evArtist.toLowerCase();
-    return ev.includes(display)||ev.includes(typed)||normalizeArtist(ev)===normalizeArtist(display)||normalizeArtist(ev)===normalizeArtist(typed);
-  });
-}
-function isMyTracked(evArtist){
-  // Only current user's artists for banner
   return trackedArtists.some(a=>{
     const display=getArtistDisplayName(a).toLowerCase();
     const typed=getArtistTypedName(a).toLowerCase();
@@ -275,6 +258,7 @@ function isMyTracked(evArtist){
     return ev.includes(display)||ev.includes(typed)||normalizeArtist(ev)===normalizeArtist(display)||normalizeArtist(ev)===normalizeArtist(typed);
   });
 }
+function isMyTracked(evArtist){return isTracked(evArtist);}
 
 function onSaleStatus(ev){
   if(!ev.onSaleDate)return null;
@@ -543,12 +527,6 @@ async function loadFromBin(){
   const rec=await getLatestBinRecord();
   if(rec.events&&rec.events.length){events=rec.events;if(events.length)nextId=Math.max(...events.map(e=>e.id))+1;}
   if(rec.rsvps)rsvps=rec.rsvps;
-  if(rec.trackedArtists){
-    // Merge: preserve any in-memory changes, fill in from bin for other users
-    const merged=Object.assign({},rec.trackedArtists);
-    if(userName&&trackedArtists.length>0)merged[userName]=trackedArtists;
-    allTrackedArtists=merged;
-  }
   const stored=localStorage.getItem(LS_NAME);
   if(stored){userName=stored;document.getElementById("userName").value=stored;syncTrackedArtists();}
   lastSyncTs=rec.lastSync||null;updateLastSyncLabel(rec.lastSync);
@@ -558,7 +536,7 @@ async function saveToBin(){
   syncTimer=setTimeout(async()=>{
     setSyncStatus("Saving...","syncing");
     try{
-      await fetch(`${JSONBIN_BASE}/b/${BIN_ID}`,{method:"PUT",headers:{"Content-Type":"application/json","X-Master-Key":JSONBIN_KEY},body:JSON.stringify({events,rsvps,trackedArtists:allTrackedArtists,lastSync:lastSyncTs||null})});
+      await fetch(`${JSONBIN_BASE}/b/${BIN_ID}`,{method:"PUT",headers:{"Content-Type":"application/json","X-Master-Key":JSONBIN_KEY},body:JSON.stringify({events,rsvps,lastSync:lastSyncTs||null})});
       setSyncStatus("Synced ✓","");
     }catch(e){setSyncStatus("Sync failed","err");}
   },800);
@@ -567,7 +545,7 @@ async function saveToBinFull(lastSync){
   setSyncStatus("Saving...","syncing");
   try{
     lastSyncTs=lastSync;
-    await fetch(`${JSONBIN_BASE}/b/${BIN_ID}`,{method:"PUT",headers:{"Content-Type":"application/json","X-Master-Key":JSONBIN_KEY},body:JSON.stringify({events,rsvps,trackedArtists:allTrackedArtists,lastSync})});
+    await fetch(`${JSONBIN_BASE}/b/${BIN_ID}`,{method:"PUT",headers:{"Content-Type":"application/json","X-Master-Key":JSONBIN_KEY},body:JSON.stringify({events,rsvps,lastSync})});
     setSyncStatus("Synced ✓","");
   }catch(e){setSyncStatus("Sync failed","err");}
 }
@@ -741,11 +719,11 @@ async function addArtist(){
   btn.disabled=false;btn.textContent="Add";
   if(result.found){
     const entry=result.matchedName.toLowerCase()===name.toLowerCase()?name:{typed:name,matched:result.matchedName};
-    trackedArtists.push(entry);await saveTrackedArtists();input.value="";renderArtistList();renderCalendar();
+    trackedArtists.push(entry);saveTrackedArtists();input.value="";renderArtistList();renderCalendar();
     if(result.matchedName.toLowerCase()!==name.toLowerCase()){showArtistResult(`✓ Found as "${result.matchedName}" on Ticketmaster — tracking ${result.count} upcoming Seattle show${result.count!==1?"s":""}.`,"ok");}
     else{showArtistResult(`✓ Found on Ticketmaster — tracking ${result.count} upcoming Seattle show${result.count!==1?"s":""}.`,"ok");}
   }else{
-    trackedArtists.push(name);await saveTrackedArtists();input.value="";renderArtistList();renderCalendar();
+    trackedArtists.push(name);saveTrackedArtists();input.value="";renderArtistList();renderCalendar();
     showArtistResult(`Added "${name}" — no upcoming Seattle shows found right now, but you'll be notified if any are announced.`,"err");
   }
 }
@@ -772,7 +750,7 @@ function showArtistResult(msg,type){
   el.textContent=msg;el.className="artist-search-result"+(type?" "+type:"");el.style.display="block";
   if(type==="ok")setTimeout(()=>{el.style.display="none";},5000);
 }
-async function removeArtist(i){trackedArtists.splice(i,1);await saveTrackedArtists();renderArtistList();renderCalendar();}
+async function removeArtist(i){trackedArtists.splice(i,1);saveTrackedArtists();renderArtistList();renderCalendar();}
 function renderFriendsFeed(){
   const feed=document.getElementById("friendsFeed");
   const ids=Object.keys(rsvps).map(Number);
@@ -802,6 +780,7 @@ function jumpToShow(id){
 function populateVenueSelect(){VENUES.forEach(v=>{const o=document.createElement("option");o.value=v;o.textContent=v;document.getElementById("fVenue").appendChild(o);});}
 
 populateVenueSelect();
+loadTrackedArtists();
 initStorage().then(async()=>{
   renderFilterBar();renderCalendar();renderArtistList();
   await runSync(true);
