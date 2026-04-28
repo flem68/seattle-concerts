@@ -240,7 +240,7 @@ let events=[];
 let allTrackedArtists={};  // keyed by name: {"Paul":["Beck","Kevin Morby"],"Friend":["BTS"]}
 let trackedArtists=[];     // current user's artists — derived from allTrackedArtists[userName]
 let rsvps={},userName="";
-let nextId=1000,syncTimer=null,isSyncing=false;
+let nextId=1000,syncTimer=null,isSyncing=false,lastSyncTs=null;
 
 function getMyArtists(){
   if(!userName)return[];
@@ -546,15 +546,14 @@ async function loadFromBin(){
   if(rec.trackedArtists)allTrackedArtists=rec.trackedArtists;
   const stored=localStorage.getItem(LS_NAME);
   if(stored){userName=stored;document.getElementById("userName").value=stored;syncTrackedArtists();}
-  updateLastSyncLabel(rec.lastSync);
+  lastSyncTs=rec.lastSync||null;updateLastSyncLabel(rec.lastSync);
 }
 async function saveToBin(){
   clearTimeout(syncTimer);
   syncTimer=setTimeout(async()=>{
     setSyncStatus("Saving...","syncing");
     try{
-      const rec=await getLatestBinRecord();
-      await fetch(`${JSONBIN_BASE}/b/${BIN_ID}`,{method:"PUT",headers:{"Content-Type":"application/json","X-Master-Key":JSONBIN_KEY},body:JSON.stringify({events,rsvps,trackedArtists:allTrackedArtists,lastSync:rec.lastSync||null})});
+      await fetch(`${JSONBIN_BASE}/b/${BIN_ID}`,{method:"PUT",headers:{"Content-Type":"application/json","X-Master-Key":JSONBIN_KEY},body:JSON.stringify({events,rsvps,trackedArtists:allTrackedArtists,lastSync:lastSyncTs||null})});
       setSyncStatus("Synced ✓","");
     }catch(e){setSyncStatus("Sync failed","err");}
   },800);
@@ -562,6 +561,7 @@ async function saveToBin(){
 async function saveToBinFull(lastSync){
   setSyncStatus("Saving...","syncing");
   try{
+    lastSyncTs=lastSync;
     await fetch(`${JSONBIN_BASE}/b/${BIN_ID}`,{method:"PUT",headers:{"Content-Type":"application/json","X-Master-Key":JSONBIN_KEY},body:JSON.stringify({events,rsvps,trackedArtists:allTrackedArtists,lastSync})});
     setSyncStatus("Synced ✓","");
   }catch(e){setSyncStatus("Sync failed","err");}
