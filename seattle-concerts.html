@@ -543,7 +543,12 @@ async function loadFromBin(){
   const rec=await getLatestBinRecord();
   if(rec.events&&rec.events.length){events=rec.events;if(events.length)nextId=Math.max(...events.map(e=>e.id))+1;}
   if(rec.rsvps)rsvps=rec.rsvps;
-  if(rec.trackedArtists)allTrackedArtists=rec.trackedArtists;
+  if(rec.trackedArtists){
+    // Merge: preserve any in-memory changes, fill in from bin for other users
+    const merged=Object.assign({},rec.trackedArtists);
+    if(userName&&trackedArtists.length>0)merged[userName]=trackedArtists;
+    allTrackedArtists=merged;
+  }
   const stored=localStorage.getItem(LS_NAME);
   if(stored){userName=stored;document.getElementById("userName").value=stored;syncTrackedArtists();}
   lastSyncTs=rec.lastSync||null;updateLastSyncLabel(rec.lastSync);
@@ -802,7 +807,13 @@ initStorage().then(async()=>{
   await runSync(true);
   if(trackedArtists.length){await checkTrackedArtists();}
 });
-setInterval(async()=>{await loadFromBin();renderCalendar();renderFriendsFeed();},120000);
+setInterval(async()=>{
+  // Reload events and RSVPs from bin but preserve in-memory tracked artists
+  const rec=await getLatestBinRecord();
+  if(rec.events&&rec.events.length){events=rec.events;if(events.length)nextId=Math.max(...events.map(e=>e.id))+1;}
+  if(rec.rsvps)rsvps=rec.rsvps;
+  renderCalendar();renderFriendsFeed();
+},120000);
 </script>
 </body>
 </html>
