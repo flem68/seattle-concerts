@@ -541,16 +541,20 @@ async function getLatestBinRecord(){
   try{const r=await fetch(`${JSONBIN_BASE}/b/${BIN_ID}/latest`,{headers:{"X-Master-Key":JSONBIN_KEY}});const d=await r.json();return d.record||d;}catch(e){return{};}
 }
 async function initStorage(){
+  // Load name from localStorage immediately - no network needed
+  const stored=localStorage.getItem(LS_NAME);
+  if(stored){userName=stored;document.getElementById("userName").value=stored;}
+  // Load JSONBin in background with timeout - don't block rendering
   setSyncStatus("Connecting...","syncing");
-  try{await loadFromBin();setSyncStatus("Synced","");}
-  catch(e){setSyncStatus("Offline","");}
+  const timeout=new Promise(r=>setTimeout(r,5000));
+  const load=loadFromBin().catch(()=>{});
+  await Promise.race([load,timeout]);
+  setSyncStatus("","");
 }
 async function loadFromBin(){
   const rec=await getLatestBinRecord();
   if(rec.events&&rec.events.length){events=rec.events;if(events.length)nextId=Math.max(...events.map(e=>e.id))+1;}
   if(rec.rsvps)rsvps=rec.rsvps;
-  const stored=localStorage.getItem(LS_NAME);
-  if(stored){userName=stored;document.getElementById("userName").value=stored;syncTrackedArtists();}
   lastSyncTs=rec.lastSync||null;updateLastSyncLabel(rec.lastSync);
 }
 async function saveToBin(){
