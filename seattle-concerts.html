@@ -730,7 +730,7 @@ function renderArtistList(){
     return`<div class="artist-row"><div class="a-avatar">${display[0].toUpperCase()}</div><div style="flex:1;"><div class="a-name">${display}</div>${meta}</div><button class="a-remove" onclick="removeArtist(${i})">remove</button></div>`;
   }).join("");
 }
-async async function addArtist(){
+async function addArtist(){
   if(!userName){showArtistResult("Please enter your name at the top first.","err");return;}
   const input=document.getElementById("artistInput");const name=input.value.trim();if(!name)return;
   const alreadyTracked=trackedArtists.some(a=>normalizeArtist(getArtistDisplayName(a))===normalizeArtist(name)||normalizeArtist(getArtistTypedName(a))===normalizeArtist(name));
