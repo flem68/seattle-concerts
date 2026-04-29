@@ -482,7 +482,14 @@ async function getLatestBinRecord(){
 }
 async function initStorage(){
   setSyncStatus("Connecting...","syncing");
-  try{await loadFromBin();setSyncStatus("Synced","");}catch(e){setSyncStatus("Offline","");}
+  try{
+    const p=new Promise(async(resolve)=>{
+      try{await loadFromBin();}catch(e){}
+      resolve();
+    });
+    await Promise.race([p,new Promise(r=>setTimeout(r,5000))]);
+    setSyncStatus("Synced","");
+  }catch(e){setSyncStatus("Offline","");}
 }
 async function loadFromBin(){
   const rec=await getLatestBinRecord();
@@ -690,6 +697,8 @@ function jumpToShow(id){
 }
 function populateVenueSelect(){VENUES.forEach(v=>{const o=document.createElement("option");o.value=v;o.textContent=v;document.getElementById("fVenue").appendChild(o);});}
 populateVenueSelect();
+// Render immediately so UI appears even if storage is slow
+renderFilterBar();renderCalendar();renderArtistList();
 initStorage().then(async()=>{
   await loadTrackedArtists();
   renderFilterBar();renderCalendar();renderArtistList();
