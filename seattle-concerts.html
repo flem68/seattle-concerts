@@ -130,16 +130,17 @@ h1{font-size:22px;font-weight:500;color:#1a1a18;margin-bottom:0.25rem;}
 .newshows-artist{font-size:13px;font-weight:500;color:#1a1a18;flex:1;}
 .newshows-venue{font-size:11px;color:#888780;}
 .newshows-date{font-size:11px;font-weight:600;padding:2px 10px;border-radius:20px;background:#EEEDFE;color:#3C3489;border:1px solid #534AB7;white-space:nowrap;}
+.dismiss-btn{background:none;border:none;cursor:pointer;font-size:16px;color:#888780;line-height:1;padding:0 0 0 8px;}
+.dismiss-btn:hover{color:#444441;}
 .private-note{font-size:11px;color:#b4b2a9;background:#f8f7f4;border-radius:6px;padding:6px 10px;margin-bottom:12px;}
-.firebase-status{font-size:10px;color:#b4b2a9;margin-top:4px;}
-.firebase-status.ok{color:#0F6E56;}
-.firebase-status.err{color:#E24B4A;}
 </style>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
 <div class="app">
 <h1>Seattle Concert Calendar</h1>
-<p class="subtitle">23 venues &nbsp;&middot;&nbsp; shared with friends &nbsp;&middot;&nbsp; verified shows only</p>
+<p class="subtitle">23 venues &nbsp;·&nbsp; shared with friends &nbsp;·&nbsp; verified shows only</p>
 <div class="name-bar">
 <label>Your name:</label>
 <input type="text" id="userName" placeholder="e.g. Alex" oninput="onNameChange()">
@@ -158,7 +159,7 @@ h1{font-size:22px;font-weight:500;color:#1a1a18;margin-bottom:0.25rem;}
 <button class="nav-btn" onclick="changeMonth(1)">Next &#8594;</button>
 </div>
 <div class="sync-bar">
-<button class="sync-btn" id="venueSyncBtn" onclick="runSync(false)"><span class="spin-icon">&#8635;</span>&nbsp;Sync shows</button>
+<button class="sync-btn" id="venueSyncBtn" onclick="runSync(false)"><span class="spin-icon">↻</span>&nbsp;Sync shows</button>
 <span class="last-sync" id="lastSyncLabel"></span>
 <span class="sync-progress" id="syncProgress"></span>
 </div>
@@ -181,7 +182,7 @@ h1{font-size:22px;font-weight:500;color:#1a1a18;margin-bottom:0.25rem;}
 </div>
 <div class="add-toggle" onclick="toggleAdd()"><span>Add a show manually</span><span id="addIcon">+</span></div>
 <div id="addForm" style="display:none;" class="add-form">
-<div class="info-banner">Use this to add shows from smaller venues not covered by Ticketmaster.</div>
+<div class="info-banner">Use this to add shows from smaller venues not covered by Ticketmaster — e.g. shows you spotted on a venue website.</div>
 <div class="fg">
 <div class="ff"><label>Artist / event</label><input type="text" id="fArtist" placeholder="e.g. Kevin Morby"></div>
 <div><label>Date</label><input type="date" id="fDate"></div>
@@ -196,8 +197,8 @@ h1{font-size:22px;font-weight:500;color:#1a1a18;margin-bottom:0.25rem;}
 </div>
 <div id="pane-tracked" class="pane">
 <div class="section-label">Artists I follow</div>
-<div class="private-note">&#127928; Your tracked artists are personal to you and sync across all your devices. Enter your name at the top to get started.</div>
-<div id="firebaseStatus" class="firebase-status"></div>
+<div class="private-note">🎸 Your tracked artists are personal to you. Enter your name at the top to get started. Blue outlines on shows indicate any friend's tracked artist.</div>
+<div id="firebaseStatus" style="font-size:10px;color:#b4b2a9;margin-bottom:6px;"></div>
 <div id="artistList"></div>
 <div class="add-row">
 <input type="text" id="artistInput" placeholder="Artist name..." onkeydown="if(event.key==='Enter')addArtist()">
@@ -206,31 +207,10 @@ h1{font-size:22px;font-weight:500;color:#1a1a18;margin-bottom:0.25rem;}
 <div id="artistSearchResult"></div>
 </div>
 <div id="pane-friends" class="pane">
-<div class="section-label">Upcoming shows &#8212; who's going</div>
+<div class="section-label">Upcoming shows — who's going</div>
 <div id="friendsFeed"></div>
 </div>
 </div>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-<script>
-const firebaseConfig={apiKey:"AIzaSyBofQYAuXk-BM3XlR0uu4lSwaeEBuTGaUg",authDomain:"seattle-concerts-1dec7.firebaseapp.com",projectId:"seattle-concerts-1dec7",storageBucket:"seattle-concerts-1dec7.firebasestorage.app",messagingSenderId:"210347369404",appId:"1:210347369404:web:50ee5991da96cc8e60c1b9"};
-firebase.initializeApp(firebaseConfig);
-const db=firebase.firestore();
-window.firebaseLoadArtists=async function(username){
-  if(!username)return null;
-  const key=username.toLowerCase().trim();
-  try{const snap=await db.collection("artists").doc(key).get();if(snap.exists)return snap.data().list||[];return[];}
-  catch(e){console.warn("Firebase read error:",e);return null;}
-};
-window.firebaseSaveArtists=async function(username,artistList){
-  if(!username)return false;
-  const key=username.toLowerCase().trim();
-  try{await db.collection("artists").doc(key).set({list:artistList,updatedAt:new Date().toISOString()});return true;}
-  catch(e){console.warn("Firebase write error:",e);return false;}
-};
-window.firebaseReady=true;
-if(window.onFirebaseReady)window.onFirebaseReady();
-</script>
 <script>
 const JSONBIN_KEY="$2a$10$nBFTWzh0pyxG4/hR0BRi1um4gGwMc1GZ2LnXVpaEJX2.6nwdWae/S";
 const JSONBIN_BASE="https://api.jsonbin.io/v3";
@@ -238,12 +218,13 @@ const TM_KEY="tl7PNcx66EX7LlAGiqleRQjQenqCaoJU";
 const TM_BASE="https://app.ticketmaster.com/discovery/v2";
 const SYNC_COOLDOWN_HOURS=12;
 const LS_NAME="seattle-cal-name";
-const LS_ARTISTS="seattle-cal-artists";
 const BIN_ID="69f0f47a856a68218982c5a9";
 const TRACTOR_WORKER="https://tractor-proxy.paul-7ec.workers.dev";
+
 const VENUES=["Tractor Tavern","Sunset Tavern","Moore Theatre","The Crocodile","Barboza","El Corazon","High Dive","Triple Door","Showbox SoDo","The Clockout Lounge","Climate Pledge Arena","Paramount Theatre","The Showbox","Neumos","WaMu Theater","Neptune Theatre","Gorge Amphitheatre","5th Avenue Theatre","Chateau Ste. Michelle","Chop Suey","Zoo Tunes","Remlinger Farms","Marymoor Live","Other"];
 const VC={"Tractor Tavern":{bg:"#FAEEDA",text:"#633806",dot:"#BA7517"},"Sunset Tavern":{bg:"#E1F5EE",text:"#085041",dot:"#0F6E56"},"Moore Theatre":{bg:"#EEEDFE",text:"#3C3489",dot:"#534AB7"},"The Crocodile":{bg:"#FAECE7",text:"#712B13",dot:"#D85A30"},"Barboza":{bg:"#FBEAF0",text:"#72243E",dot:"#993556"},"El Corazon":{bg:"#FCEBEB",text:"#791F1F",dot:"#E24B4A"},"High Dive":{bg:"#EAF3DE",text:"#27500A",dot:"#639922"},"Triple Door":{bg:"#E6F1FB",text:"#0C447C",dot:"#378ADD"},"Showbox SoDo":{bg:"#F1EFE8",text:"#444441",dot:"#888780"},"The Clockout Lounge":{bg:"#FAC775",text:"#412402",dot:"#854F0B"},"Climate Pledge Arena":{bg:"#B5D4F4",text:"#042C53",dot:"#185FA5"},"Paramount Theatre":{bg:"#CECBF6",text:"#26215C",dot:"#534AB7"},"The Showbox":{bg:"#9FE1CB",text:"#04342C",dot:"#1D9E75"},"Neumos":{bg:"#F4C0D1",text:"#4B1528",dot:"#D4537E"},"WaMu Theater":{bg:"#C0DD97",text:"#173404",dot:"#3B6D11"},"Neptune Theatre":{bg:"#F0997B",text:"#4A1B0C",dot:"#993C1D"},"Gorge Amphitheatre":{bg:"#85B7EB",text:"#042C53",dot:"#185FA5"},"5th Avenue Theatre":{bg:"#FCEBEB",text:"#501313",dot:"#A32D2D"},"Chateau Ste. Michelle":{bg:"#EAF3DE",text:"#1A3D0A",dot:"#4A8C1C"},"Chop Suey":{bg:"#FAECE7",text:"#5C1A0A",dot:"#C24E2A"},"Zoo Tunes":{bg:"#E6F4FB",text:"#0A3A52",dot:"#1A7FA8"},"Remlinger Farms":{bg:"#FEF3C7",text:"#78350F",dot:"#D97706"},"Marymoor Live":{bg:"#D1FAE5",text:"#064E3B",dot:"#059669"},"Other":{bg:"#D3D1C7",text:"#2C2C2A",dot:"#5F5E5A"}};
 function gc(v){return VC[v]||VC["Other"];}
+
 function matchVenue(name){
   if(!name)return null;
   const n=name.toLowerCase().trim();
@@ -252,43 +233,50 @@ function matchVenue(name){
   for(const[k,v]of Object.entries(map)){if(n.includes(k))return v;}
   return null;
 }
+
 function normalizeArtist(name){return name.toLowerCase().replace(/[^a-z0-9]/g,"");}
+
 const today=new Date();
 let curYear=today.getFullYear(),curMonth=today.getMonth();
 let activeVenue="All",addFormOpen=false;
-let events=[],trackedArtists=[],rsvps={},userName="";
+let events=[];
+let trackedArtists=[];
+let rsvps={},userName="";
 let nextId=1000,syncTimer=null,isSyncing=false,lastSyncTs=null;
 
-function lsLoadArtists(){try{const s=localStorage.getItem(LS_ARTISTS);if(s)return JSON.parse(s);}catch(e){}return[];}
-function lsSaveArtists(list){try{localStorage.setItem(LS_ARTISTS,JSON.stringify(list));}catch(e){}}
-function setFirebaseStatus(msg,cls){const el=document.getElementById("firebaseStatus");if(!el)return;el.textContent=msg;el.className="firebase-status"+(cls?" "+cls:"");}
-
-async function loadTrackedArtists(){
-  trackedArtists=lsLoadArtists();
-  if(!userName)return;
-  if(window.firebaseReady){await syncFromFirebase();}
-  else{window.onFirebaseReady=async()=>{await syncFromFirebase();};}
+// Firebase setup
+firebase.initializeApp({apiKey:"AIzaSyBofQYAuXk-BM3XlR0uu4lSwaeEBuTGaUg",authDomain:"seattle-concerts-1dec7.firebaseapp.com",projectId:"seattle-concerts-1dec7",storageBucket:"seattle-concerts-1dec7.firebasestorage.app",messagingSenderId:"210347369404",appId:"1:210347369404:web:50ee5991da96cc8e60c1b9"});
+const db=firebase.firestore();
+function setFBStatus(msg,col){const el=document.getElementById("firebaseStatus");if(el){el.textContent=msg;el.style.color=col||"#b4b2a9";}}
+async function firebaseLoad(username){
+  if(!username)return null;
+  try{const snap=await db.collection("artists").doc(username.toLowerCase().trim()).get();if(snap.exists)return snap.data().list||[];return[];}
+  catch(e){console.warn("FB read:",e);return null;}
 }
-async function syncFromFirebase(){
+async function firebaseSave(username,list){
+  if(!username)return false;
+  try{await db.collection("artists").doc(username.toLowerCase().trim()).set({list:list,updatedAt:new Date().toISOString()});return true;}
+  catch(e){console.warn("FB write:",e);return false;}
+}
+function syncTrackedArtists(){}
+async function loadTrackedArtists(){
+  try{const s=localStorage.getItem("seattle-cal-artists");if(s)trackedArtists=JSON.parse(s);}catch(e){trackedArtists=[];}
   if(!userName)return;
-  setFirebaseStatus("Syncing artists...","");
-  try{
-    const list=await window.firebaseLoadArtists(userName);
-    if(list===null){setFirebaseStatus("Using local storage (offline)","err");return;}
-    trackedArtists=list;lsSaveArtists(list);
-    setFirebaseStatus("Artists synced ✓","ok");
-    setTimeout(()=>setFirebaseStatus("",""),3000);
-    renderArtistList();renderCalendar();renderNewShowsBanner();
-  }catch(e){setFirebaseStatus("Sync error — using local data","err");}
+  setFBStatus("Syncing artists...","#185FA5");
+  const list=await firebaseLoad(userName);
+  if(list===null){setFBStatus("Using local data (offline)","#E24B4A");return;}
+  trackedArtists=list;
+  try{localStorage.setItem("seattle-cal-artists",JSON.stringify(list));}catch(e){}
+  setFBStatus("Artists synced ✓","#0F6E56");
+  setTimeout(()=>setFBStatus("",""),3000);
+  renderArtistList();renderCalendar();renderNewShowsBanner();
 }
 async function saveTrackedArtists(){
-  lsSaveArtists(trackedArtists);
+  try{localStorage.setItem("seattle-cal-artists",JSON.stringify(trackedArtists));}catch(e){}
   if(!userName)return;
-  if(window.firebaseReady){
-    const ok=await window.firebaseSaveArtists(userName,trackedArtists);
-    if(ok){setFirebaseStatus("Artists saved ✓","ok");setTimeout(()=>setFirebaseStatus("",""),3000);}
-    else{setFirebaseStatus("Save failed — stored locally only","err");}
-  }
+  const ok=await firebaseSave(userName,trackedArtists);
+  if(ok){setFBStatus("Saved ✓","#0F6E56");setTimeout(()=>setFBStatus("",""),3000);}
+  else{setFBStatus("Save failed - stored locally","#E24B4A");}
 }
 function getArtistDisplayName(a){return typeof a==="object"?a.matched||a.typed:a;}
 function getArtistTypedName(a){return typeof a==="object"?a.typed:a;}
@@ -301,6 +289,7 @@ function isTracked(evArtist){
   });
 }
 function isMyTracked(evArtist){return isTracked(evArtist);}
+
 function onSaleStatus(ev){
   if(!ev.onSaleDate)return null;
   const now=new Date();now.setHours(0,0,0,0);
@@ -314,9 +303,10 @@ function onSaleHtml(ev){
   const dateStr=fmtDate(ev.onSaleDate);
   const now=new Date();now.setHours(0,0,0,0);
   const daysAway=Math.round((new Date(ev.onSaleDate+"T00:00:00")-now)/86400000);
-  const labels={now:"&#127903; Tickets ON SALE TODAY — "+dateStr,soon:"&#127903; On sale in "+daysAway+" day"+(daysAway!==1?"s":"")+" — "+dateStr,future:"&#127903; Tickets go on sale "+dateStr,past:"&#127903; Tickets on sale now (went on sale "+dateStr+")"};
-  return'<div class="det-row"><span class="onsale-badge '+status+'">'+ labels[status]+'</span></div>';
+  const labels={now:`🎟 Tickets ON SALE TODAY — ${dateStr}`,soon:`🎟 On sale in ${daysAway} day${daysAway!==1?"s":""} — ${dateStr}`,future:`🎟 Tickets go on sale ${dateStr}`,past:`🎟 Tickets on sale now (went on sale ${dateStr})`};
+  return`<div class="det-row"><span class="onsale-badge ${status}">${labels[status]}</span></div>`;
 }
+
 function parseTmEvent(tme,fallbackVenue){
   const artist=tme.name||"";
   const date=tme.dates&&tme.dates.start&&tme.dates.start.localDate;
@@ -328,12 +318,13 @@ function parseTmEvent(tme,fallbackVenue){
   try{const sd=tme.sales&&tme.sales.public&&tme.sales.public.startDateTime;if(sd)onSaleDate=sd.split("T")[0];}catch(e){}
   const ticketUrl=tme.url||null;
   let time="8:00 PM";
-  try{const lt=tme.dates.start.localTime;if(lt){const[h,m]=lt.split(":");const hr=parseInt(h);time=(hr%12||12)+":"+m+" "+(hr>=12?"PM":"AM");}}catch(e){}
+  try{const lt=tme.dates.start.localTime;if(lt){const[h,m]=lt.split(":");const hr=parseInt(h);time=`${hr%12||12}:${m} ${hr>=12?"PM":"AM"}`;}}catch(e){}
   const ev={id:nextId++,artist,date,time,venue,genre:"",source:"ticketmaster"};
   if(onSaleDate)ev.onSaleDate=onSaleDate;
   if(ticketUrl)ev.ticketUrl=ticketUrl;
   return ev;
 }
+
 async function fetchVenueById(venueName,fallbackVenue){
   const results=[];
   const now=new Date();
@@ -341,39 +332,57 @@ async function fetchVenueById(venueName,fallbackVenue){
   const endDate=new Date(now.getFullYear(),now.getMonth()+5,now.getDate());
   const end=endDate.toISOString().replace(/\.\d+Z$/,"Z");
   try{
-    const url=TM_BASE+"/events.json?apikey="+TM_KEY+"&keyword="+encodeURIComponent(venueName)+"&stateCode=WA&classificationName=music&startDateTime="+start+"&endDateTime="+end+"&size=100&sort=date,asc";
-    const resp=await fetch(url);if(!resp.ok)return results;
-    const data=await resp.json();if(data.fault)return results;
+    const url=`${TM_BASE}/events.json?apikey=${TM_KEY}&keyword=${encodeURIComponent(venueName)}&stateCode=WA&classificationName=music&startDateTime=${start}&endDateTime=${end}&size=100&sort=date,asc`;
+    const resp=await fetch(url);
+    if(!resp.ok)return results;
+    const data=await resp.json();
+    if(data.fault)return results;
     const batch=(data._embedded&&data._embedded.events)||[];
-    batch.forEach(tme=>{const ev=parseTmEvent(tme,fallbackVenue);if(ev&&!results.some(e=>normalizeArtist(e.artist)===normalizeArtist(ev.artist)&&e.date===ev.date))results.push(ev);});
+    batch.forEach(tme=>{
+      const ev=parseTmEvent(tme,fallbackVenue);
+      if(ev&&!results.some(e=>normalizeArtist(e.artist)===normalizeArtist(ev.artist)&&e.date===ev.date))results.push(ev);
+    });
   }catch(e){}
   return results;
 }
+
 async function fetchTractorTavern(){
-  const results=[];const now=new Date();const nowStr=now.toISOString().split("T")[0];
+  const results=[];
+  const now=new Date();
+  const nowStr=now.toISOString().split("T")[0];
   try{
-    const resp=await fetch(TRACTOR_WORKER);if(!resp.ok)return results;
-    const data=await resp.json();const evList=data.events||[];
+    const resp=await fetch(TRACTOR_WORKER);
+    if(!resp.ok)return results;
+    const data=await resp.json();
+    const evList=data.events||[];
     evList.forEach(twe=>{
-      const dateRaw=twe.startDateTime||"";if(!dateRaw)return;
-      const date=dateRaw.split("T")[0];if(!date||date<nowStr)return;
-      let artist=twe.name||"";if(!artist)return;
+      const dateRaw=twe.startDateTime||"";
+      if(!dateRaw)return;
+      const date=dateRaw.split("T")[0];
+      if(!date||date<nowStr)return;
+      let artist=twe.name||"";
+      if(!artist)return;
       artist=artist.replace(/&amp;/g,"&").replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&#39;/g,"'").replace(/&quot;/g,'"');
-      let venue="Tractor Tavern";const lc=artist.toLowerCase();
+      let venue="Tractor Tavern";
+      const lc=artist.toLowerCase();
       if(lc.includes("at the sunset"))venue="Sunset Tavern";
       else if(lc.includes("at the clock-out")||lc.includes("at clock-out"))venue="The Clockout Lounge";
-      else if(lc.includes("at conor byrne")||lc.includes("at the fremont abbey"))venue="Other";
+      else if(lc.includes("at conor byrne"))venue="Other";
+      else if(lc.includes("at the fremont abbey"))venue="Other";
       let time="8:00 PM";
-      try{if(dateRaw.includes("T")){const[,t]=dateRaw.split("T");const[h,m]=t.split(":");const hr=parseInt(h);time=(hr%12||12)+":"+m+" "+(hr>=12?"PM":"AM");}}catch(e){}
+      try{if(dateRaw.includes("T")){const[,t]=dateRaw.split("T");const[h,m]=t.split(":");const hr=parseInt(h);time=`${hr%12||12}:${m} ${hr>=12?"PM":"AM"}`;}}catch(e){}
       const ticketUrl=twe.url||null;
-      if(!results.some(e=>normalizeArtist(e.artist)===normalizeArtist(artist)&&e.date===date)){
+      const already=results.some(e=>normalizeArtist(e.artist)===normalizeArtist(artist)&&e.date===date);
+      if(!already){
         const ev={id:nextId++,artist,date,time,venue,genre:"",source:"ticketmaster"};
-        if(ticketUrl)ev.ticketUrl=ticketUrl;results.push(ev);
+        if(ticketUrl)ev.ticketUrl=ticketUrl;
+        results.push(ev);
       }
     });
   }catch(e){console.warn("Tractor Worker error:",e.message);}
   return results;
 }
+
 async function checkTrackedArtists(){
   if(!trackedArtists.length)return;
   const now=new Date();
@@ -382,25 +391,30 @@ async function checkTrackedArtists(){
   const end=endDate.toISOString().replace(/\.\d+Z$/,"Z");
   const newShows=[];
   for(const artist of trackedArtists){
-    const displayName=getArtistDisplayName(artist);const typedName=getArtistTypedName(artist);
+    const displayName=getArtistDisplayName(artist);
+    const typedName=getArtistTypedName(artist);
     const queries=new Set([displayName,typedName,displayName.replace(/\s+/g,"")]);
     for(const q of queries){
       try{
-        const url=TM_BASE+"/events.json?apikey="+TM_KEY+"&keyword="+encodeURIComponent(q)+"&city=Seattle&stateCode=WA&classificationName=music&startDateTime="+start+"&endDateTime="+end+"&size=10&sort=date,asc";
+        const url=`${TM_BASE}/events.json?apikey=${TM_KEY}&keyword=${encodeURIComponent(q)}&city=Seattle&stateCode=WA&classificationName=music&startDateTime=${start}&endDateTime=${end}&size=10&sort=date,asc`;
         const resp=await fetch(url);if(!resp.ok)continue;
         const data=await resp.json();if(data.fault)continue;
         const batch=(data._embedded&&data._embedded.events)||[];
         batch.forEach(tme=>{
-          const evArtist=tme.name||"";const date=tme.dates&&tme.dates.start&&tme.dates.start.localDate;
+          const evArtist=tme.name||"";
+          const date=tme.dates&&tme.dates.start&&tme.dates.start.localDate;
           if(!evArtist||!date)return;
           const en=normalizeArtist(evArtist);const qn=normalizeArtist(q);
           if(!en.includes(qn)&&!qn.includes(en))return;
           const tmVenueName=(tme._embedded&&tme._embedded.venues&&tme._embedded.venues[0]&&tme._embedded.venues[0].name)||"";
           const venue=matchVenue(tmVenueName)||tmVenueName||"Other";
-          let onSaleDate=null;try{const sd=tme.sales&&tme.sales.public&&tme.sales.public.startDateTime;if(sd)onSaleDate=sd.split("T")[0];}catch(e){}
+          let onSaleDate=null;
+          try{const sd=tme.sales&&tme.sales.public&&tme.sales.public.startDateTime;if(sd)onSaleDate=sd.split("T")[0];}catch(e){}
           const ticketUrl=tme.url||null;
-          let time="8:00 PM";try{const lt=tme.dates.start.localTime;if(lt){const[h,m]=lt.split(":");const hr=parseInt(h);time=(hr%12||12)+":"+m+" "+(hr>=12?"PM":"AM");}}catch(e){}
-          if(!events.some(e=>normalizeArtist(e.artist)===normalizeArtist(evArtist)&&e.date===date)){
+          let time="8:00 PM";
+          try{const lt=tme.dates.start.localTime;if(lt){const[h,m]=lt.split(":");const hr=parseInt(h);time=`${hr%12||12}:${m} ${hr>=12?"PM":"AM"}`;}}catch(e){}
+          const exists=events.some(e=>normalizeArtist(e.artist)===normalizeArtist(evArtist)&&e.date===date);
+          if(!exists){
             const nev={id:nextId++,artist:evArtist,date,time,venue,genre:"",source:"ticketmaster"};
             if(onSaleDate)nev.onSaleDate=onSaleDate;if(ticketUrl)nev.ticketUrl=ticketUrl;
             events.push(nev);newShows.push(nev);
@@ -410,18 +424,27 @@ async function checkTrackedArtists(){
       await new Promise(r=>setTimeout(r,150));
     }
   }
-  if(newShows.length>0){await saveToBin();renderFilterBar();renderCalendar();}
+  if(newShows.length>0){
+    await saveToBin();renderFilterBar();renderCalendar();
+  }
 }
+
 function renderNewShowsBanner(){
   const banner=document.getElementById("newShowsBanner");
   if(!userName||!trackedArtists.length){banner.innerHTML="";return;}
   const now=new Date().toISOString().split("T")[0];
   const myRsvpd=new Set(Object.keys(rsvps).filter(id=>{const r=rsvps[id]||{};return r[userName];}).map(Number));
-  const upcoming=events.filter(ev=>{if(ev.date<now)return false;if(myRsvpd.has(ev.id))return false;return isMyTracked(ev.artist);}).sort((a,b)=>a.date.localeCompare(b.date));
+  const upcoming=events.filter(ev=>{
+    if(ev.date<now)return false;
+    if(myRsvpd.has(ev.id))return false;
+    return isMyTracked(ev.artist);
+  }).sort((a,b)=>a.date.localeCompare(b.date));
   if(!upcoming.length){banner.innerHTML="";return;}
-  const rows=upcoming.map(ev=>'<div class="newshows-row" onclick="jumpToShow('+ev.id+')"><div style="width:8px;height:8px;border-radius:50%;background:'+gc(ev.venue).dot+';flex-shrink:0;"></div><span class="newshows-artist">'+ev.artist+'</span><span class="newshows-venue">'+ev.venue+'</span><span class="newshows-date">'+fmtDate(ev.date)+'</span></div>').join("");
-  banner.innerHTML='<div class="newshows-banner"><div class="newshows-banner-title"><span>&#127928; Upcoming shows for your tracked artists — '+upcoming.length+' show'+(upcoming.length!==1?"s":"")+'</span></div>'+rows+'</div>';
+  const rows=upcoming.map(ev=>`<div class="newshows-row" onclick="jumpToShow(${ev.id})"><div style="width:8px;height:8px;border-radius:50%;background:${gc(ev.venue).dot};flex-shrink:0;"></div><span class="newshows-artist">${ev.artist}</span><span class="newshows-venue">${ev.venue}</span><span class="newshows-date">${fmtDate(ev.date)}</span></div>`).join("");
+  banner.innerHTML=`<div class="newshows-banner"><div class="newshows-banner-title"><span>🎸 Upcoming shows for your tracked artists — ${upcoming.length} show${upcoming.length!==1?"s":""}</span></div>${rows}</div>`;
 }
+function dismissNewShows(){document.getElementById("newShowsBanner").innerHTML="";}
+
 function renderOnSaleBanner(){
   const banner=document.getElementById("onsaleBanner");
   const now=new Date();now.setHours(0,0,0,0);
@@ -430,87 +453,123 @@ function renderOnSaleBanner(){
   const rows=upcoming.map(ev=>{
     const status=onSaleStatus(ev);const now2=new Date();now2.setHours(0,0,0,0);
     const daysAway=Math.round((new Date(ev.onSaleDate+"T00:00:00")-now2)/86400000);
-    const label=status==="now"?"On sale TODAY":status==="soon"?"On sale in "+daysAway+" day"+(daysAway!==1?"s":""):"On sale "+fmtDate(ev.onSaleDate);
-    return'<div class="onsale-row" onclick="jumpToShow('+ev.id+')"><div style="width:8px;height:8px;border-radius:50%;background:'+gc(ev.venue).dot+';flex-shrink:0;"></div><span class="onsale-artist">'+ev.artist+'</span><span class="onsale-venue">'+ev.venue+'</span><span class="onsale-date-badge '+status+'">'+label+'</span></div>';
+    const label=status==="now"?"On sale TODAY":status==="soon"?`On sale in ${daysAway} day${daysAway!==1?"s":""}`:`On sale ${fmtDate(ev.onSaleDate)}`;
+    return`<div class="onsale-row" onclick="jumpToShow(${ev.id})"><div style="width:8px;height:8px;border-radius:50%;background:${gc(ev.venue).dot};flex-shrink:0;"></div><span class="onsale-artist">${ev.artist}</span><span class="onsale-venue">${ev.venue}</span><span class="onsale-date-badge ${status}">${label}</span></div>`;
   }).join("");
-  banner.innerHTML='<div class="onsale-banner"><div class="onsale-banner-title">&#127903; Tickets going on sale soon — '+upcoming.length+' show'+(upcoming.length!==1?"s":"")+'</div>'+rows+'</div>';
+  banner.innerHTML=`<div class="onsale-banner"><div class="onsale-banner-title">🎟 Tickets going on sale soon — ${upcoming.length} show${upcoming.length!==1?"s":""}</div>${rows}</div>`;
 }
+
 async function runSync(auto=false){
   if(isSyncing)return;
   if(auto){
-    const rec=await getLatestBinRecord();const last=rec&&rec.lastSync;const hasEvents=rec&&rec.events&&rec.events.length>0;
+    const rec=await getLatestBinRecord();
+    const last=rec&&rec.lastSync;
+    const hasEvents=rec&&rec.events&&rec.events.length>0;
     if(last&&hasEvents&&(Date.now()-new Date(last).getTime())/3600000<SYNC_COOLDOWN_HOURS){updateLastSyncLabel(last);return;}
   }
   isSyncing=true;
   const btn=document.getElementById("venueSyncBtn");btn.disabled=true;btn.classList.add("spinning");
-  const prog=document.getElementById("syncProgress");prog.textContent="Fetching from Ticketmaster…";
-  const now=new Date();const start=now.toISOString().replace(/\.\d+Z$/,"Z");
+  const prog=document.getElementById("syncProgress");
+  prog.textContent="Fetching from Ticketmaster…";
+  const now=new Date();
+  const start=now.toISOString().replace(/\.\d+Z$/,"Z");
   const endDate=new Date(now.getFullYear(),now.getMonth()+5,now.getDate());
   const end=endDate.toISOString().replace(/\.\d+Z$/,"Z");
-  const manualEvents=events.filter(e=>e.source==="manual");const tmEvents=[];let tmError=false;
+  const manualEvents=events.filter(e=>e.source==="manual");
+  const tmEvents=[];
+  let tmError=false;
   try{
     for(let p=0;p<5;p++){
-      const url=TM_BASE+"/events.json?apikey="+TM_KEY+"&city=Seattle&stateCode=WA&classificationName=music&source=ticketmaster,ticketweb,universe,frontgate,moshtix&startDateTime="+start+"&endDateTime="+end+"&size=100&page="+p+"&sort=date,asc";
-      const resp=await fetch(url);if(!resp.ok){tmError=true;break;}
-      const data=await resp.json();if(data.fault){tmError=true;break;}
-      const batch=(data._embedded&&data._embedded.events)||[];if(!batch.length)break;
-      batch.forEach(tme=>{const ev=parseTmEvent(tme,null);if(!ev)return;if(!tmEvents.some(e=>normalizeArtist(e.artist)===normalizeArtist(ev.artist)&&e.date===ev.date&&e.venue===ev.venue))tmEvents.push(ev);});
-      if(batch.length<100)break;await new Promise(r=>setTimeout(r,300));
+      const url=`${TM_BASE}/events.json?apikey=${TM_KEY}&city=Seattle&stateCode=WA&classificationName=music&source=ticketmaster,ticketweb,universe,frontgate,moshtix&startDateTime=${start}&endDateTime=${end}&size=100&page=${p}&sort=date,asc`;
+      const resp=await fetch(url);
+      if(!resp.ok){tmError=true;break;}
+      const data=await resp.json();
+      if(data.fault){tmError=true;break;}
+      const batch=(data._embedded&&data._embedded.events)||[];
+      if(!batch.length)break;
+      batch.forEach(tme=>{
+        const ev=parseTmEvent(tme,null);
+        if(!ev)return;
+        if(!tmEvents.some(e=>normalizeArtist(e.artist)===normalizeArtist(ev.artist)&&e.date===ev.date&&e.venue===ev.venue))tmEvents.push(ev);
+      });
+      if(batch.length<100)break;
+      await new Promise(r=>setTimeout(r,300));
     }
   }catch(e){tmError=true;}
-  if(tmError){prog.textContent="Could not reach Ticketmaster — showing cached data.";setTimeout(()=>{prog.textContent="";},6000);btn.disabled=false;btn.classList.remove("spinning");isSyncing=false;return;}
+  if(tmError){
+    prog.textContent="Could not reach Ticketmaster — showing cached data.";
+    setTimeout(()=>{prog.textContent="";},6000);
+    btn.disabled=false;btn.classList.remove("spinning");isSyncing=false;return;
+  }
+
   prog.textContent="Fetching Tractor Tavern…";
   const tractorEvents=await fetchTractorTavern();
-  tractorEvents.forEach(te=>{if(!tmEvents.some(e=>normalizeArtist(e.artist)===normalizeArtist(te.artist)&&e.date===te.date))tmEvents.push(te);});
+  tractorEvents.forEach(te=>{
+    if(!tmEvents.some(e=>normalizeArtist(e.artist)===normalizeArtist(te.artist)&&e.date===te.date))tmEvents.push(te);
+  });
+
   prog.textContent="Fetching Gorge, Chateau, Remlinger & Marymoor…";
-  const extraVenues=[{keyword:"Gorge Amphitheatre",name:"Gorge Amphitheatre"},{keyword:"Chateau Ste Michelle",name:"Chateau Ste. Michelle"},{keyword:"Remlinger Farms",name:"Remlinger Farms"},{keyword:"Marymoor Live",name:"Marymoor Live"}];
+  const extraVenues=[
+    {keyword:"Gorge Amphitheatre",name:"Gorge Amphitheatre"},
+    {keyword:"Chateau Ste Michelle",name:"Chateau Ste. Michelle"},
+    {keyword:"Remlinger Farms",name:"Remlinger Farms"},
+    {keyword:"Marymoor Live",name:"Marymoor Live"}
+  ];
   for(const v of extraVenues){
     const vevents=await fetchVenueById(v.keyword,v.name);
-    vevents.forEach(ve=>{if(!tmEvents.some(e=>normalizeArtist(e.artist)===normalizeArtist(ve.artist)&&e.date===ve.date))tmEvents.push(ve);});
+    vevents.forEach(ve=>{
+      if(!tmEvents.some(e=>normalizeArtist(e.artist)===normalizeArtist(ve.artist)&&e.date===ve.date))tmEvents.push(ve);
+    });
     await new Promise(r=>setTimeout(r,300));
   }
+
   const merged=[...tmEvents];
-  manualEvents.forEach(me=>{if(!tmEvents.some(te=>normalizeArtist(te.artist)===normalizeArtist(me.artist)&&te.date===me.date))merged.push(me);});
-  events=merged;const nowTs=new Date().toISOString();
-  await saveToBinFull(nowTs);updateLastSyncLabel(nowTs);
-  prog.textContent="✓ "+tmEvents.length+" verified show"+(tmEvents.length!==1?"s":"")+" loaded from Ticketmaster";
+  manualEvents.forEach(me=>{
+    if(!tmEvents.some(te=>normalizeArtist(te.artist)===normalizeArtist(me.artist)&&te.date===me.date))merged.push(me);
+  });
+  events=merged;
+  const nowTs=new Date().toISOString();
+  await saveToBinFull(nowTs);
+  updateLastSyncLabel(nowTs);
+  prog.textContent=`✓ ${tmEvents.length} verified show${tmEvents.length!==1?"s":""} loaded from Ticketmaster`;
   setTimeout(()=>{prog.textContent="";},8000);
-  renderFilterBar();renderCalendar();btn.disabled=false;btn.classList.remove("spinning");isSyncing=false;
+  renderFilterBar();renderCalendar();
+  btn.disabled=false;btn.classList.remove("spinning");isSyncing=false;
 }
+
 async function getLatestBinRecord(){
-  try{const r=await fetch(JSONBIN_BASE+"/b/"+BIN_ID+"/latest",{headers:{"X-Master-Key":JSONBIN_KEY}});const d=await r.json();return d.record||d;}catch(e){return{};}
+  try{const r=await fetch(`${JSONBIN_BASE}/b/${BIN_ID}/latest`,{headers:{"X-Master-Key":JSONBIN_KEY}});const d=await r.json();return d.record||d;}catch(e){return{};}
 }
 async function initStorage(){
   setSyncStatus("Connecting...","syncing");
-  try{
-    const p=new Promise(async(resolve)=>{
-      try{await loadFromBin();}catch(e){}
-      resolve();
-    });
-    await Promise.race([p,new Promise(r=>setTimeout(r,5000))]);
-    setSyncStatus("Synced","");
-  }catch(e){setSyncStatus("Offline","");}
+  try{await loadFromBin();setSyncStatus("Synced","");}
+  catch(e){setSyncStatus("Offline","");}
 }
 async function loadFromBin(){
   const rec=await getLatestBinRecord();
   if(rec.events&&rec.events.length){events=rec.events;if(events.length)nextId=Math.max(...events.map(e=>e.id))+1;}
   if(rec.rsvps)rsvps=rec.rsvps;
   const stored=localStorage.getItem(LS_NAME);
-  if(stored){userName=stored;document.getElementById("userName").value=stored;}
+  if(stored){userName=stored;document.getElementById("userName").value=stored;syncTrackedArtists();}
   lastSyncTs=rec.lastSync||null;updateLastSyncLabel(rec.lastSync);
 }
 async function saveToBin(){
   clearTimeout(syncTimer);
   syncTimer=setTimeout(async()=>{
     setSyncStatus("Saving...","syncing");
-    try{await fetch(JSONBIN_BASE+"/b/"+BIN_ID,{method:"PUT",headers:{"Content-Type":"application/json","X-Master-Key":JSONBIN_KEY},body:JSON.stringify({events,rsvps,lastSync:lastSyncTs||null})});setSyncStatus("Synced ✓","");}
-    catch(e){setSyncStatus("Sync failed","err");}
+    try{
+      await fetch(`${JSONBIN_BASE}/b/${BIN_ID}`,{method:"PUT",headers:{"Content-Type":"application/json","X-Master-Key":JSONBIN_KEY},body:JSON.stringify({events,rsvps,lastSync:lastSyncTs||null})});
+      setSyncStatus("Synced ✓","");
+    }catch(e){setSyncStatus("Sync failed","err");}
   },800);
 }
 async function saveToBinFull(lastSync){
   setSyncStatus("Saving...","syncing");
-  try{lastSyncTs=lastSync;await fetch(JSONBIN_BASE+"/b/"+BIN_ID,{method:"PUT",headers:{"Content-Type":"application/json","X-Master-Key":JSONBIN_KEY},body:JSON.stringify({events,rsvps,lastSync})});setSyncStatus("Synced ✓","");}
-  catch(e){setSyncStatus("Sync failed","err");}
+  try{
+    lastSyncTs=lastSync;
+    await fetch(`${JSONBIN_BASE}/b/${BIN_ID}`,{method:"PUT",headers:{"Content-Type":"application/json","X-Master-Key":JSONBIN_KEY},body:JSON.stringify({events,rsvps,lastSync})});
+    setSyncStatus("Synced ✓","");
+  }catch(e){setSyncStatus("Sync failed","err");}
 }
 function setSyncStatus(msg,cls){const el=document.getElementById("syncStatus");el.textContent=msg;el.className="sync-status"+(cls?" "+cls:"");}
 function updateLastSyncLabel(ts){
@@ -518,104 +577,142 @@ function updateLastSyncLabel(ts){
   if(!ts){el.textContent="Not yet synced — click Sync shows";return;}
   const diff=Math.floor((Date.now()-new Date(ts).getTime())/60000);
   if(diff<2)el.textContent="Last synced: just now";
-  else if(diff<60)el.textContent="Last synced: "+diff+"m ago";
-  else if(diff<1440)el.textContent="Last synced: "+Math.floor(diff/60)+"h ago";
-  else el.textContent="Last synced: "+Math.floor(diff/1440)+"d ago";
+  else if(diff<60)el.textContent=`Last synced: ${diff}m ago`;
+  else if(diff<1440)el.textContent=`Last synced: ${Math.floor(diff/60)}h ago`;
+  else el.textContent=`Last synced: ${Math.floor(diff/1440)}d ago`;
 }
-async function onNameChange(){
-  userName=document.getElementById("userName").value.trim();
-  localStorage.setItem(LS_NAME,userName);
-  await loadTrackedArtists();
-  renderArtistList();renderNewShowsBanner();
-}
+async function onNameChange(){userName=document.getElementById("userName").value.trim();localStorage.setItem(LS_NAME,userName);await loadTrackedArtists();renderArtistList();renderNewShowsBanner();}
 function switchTab(name,el){
   document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
   document.querySelectorAll(".pane").forEach(p=>p.classList.remove("active"));
   el.classList.add("active");document.getElementById("pane-"+name).classList.add("active");
   if(name==="tracked")renderArtistList();if(name==="friends")renderFriendsFeed();
 }
-function changeMonth(dir){curMonth+=dir;if(curMonth>11){curMonth=0;curYear++;}if(curMonth<0){curMonth=11;curYear--;}closeDetail();renderCalendar();}
+function changeMonth(dir){
+  curMonth+=dir;if(curMonth>11){curMonth=0;curYear++;}if(curMonth<0){curMonth=11;curYear--;}
+  closeDetail();renderCalendar();
+}
 function renderFilterBar(){
   const bar=document.getElementById("filterBar");bar.innerHTML="";
-  const c0=document.createElement("span");c0.className="chip"+(activeVenue==="All"?" chip-all-active":"");
-  c0.textContent="All venues";c0.onclick=()=>{activeVenue="All";renderFilterBar();renderCalendar();};bar.appendChild(c0);
+  const c0=document.createElement("span");
+  c0.className="chip"+(activeVenue==="All"?" chip-all-active":"");
+  c0.textContent="All venues";c0.onclick=()=>{activeVenue="All";renderFilterBar();renderCalendar();};
+  bar.appendChild(c0);
   const used=new Set(events.map(e=>e.venue));
   VENUES.filter(v=>used.has(v)).forEach(v=>{
-    const c=gc(v),chip=document.createElement("span");chip.className="chip";
-    chip.style.background=c.bg;chip.style.color=c.text;chip.style.borderColor=c.dot;
-    if(activeVenue===v)chip.style.boxShadow="0 0 0 2px "+c.dot;
-    chip.textContent=v;chip.onclick=()=>{activeVenue=v;renderFilterBar();renderCalendar();};bar.appendChild(chip);
+    const c=gc(v),chip=document.createElement("span");
+    chip.className="chip";chip.style.background=c.bg;chip.style.color=c.text;chip.style.borderColor=c.dot;
+    if(activeVenue===v)chip.style.boxShadow=`0 0 0 2px ${c.dot}`;
+    chip.textContent=v;chip.onclick=()=>{activeVenue=v;renderFilterBar();renderCalendar();};
+    bar.appendChild(chip);
   });
 }
 function renderCalendar(){
   renderNewShowsBanner();renderOnSaleBanner();
   document.getElementById("monthLabel").textContent=new Date(curYear,curMonth,1).toLocaleString("default",{month:"long",year:"numeric"});
   const grid=document.getElementById("calGrid");grid.innerHTML="";
-  const firstDay=new Date(curYear,curMonth,1).getDay();const dim=new Date(curYear,curMonth+1,0).getDate();const dip=new Date(curYear,curMonth,0).getDate();
+  const firstDay=new Date(curYear,curMonth,1).getDay();
+  const dim=new Date(curYear,curMonth+1,0).getDate();
+  const dip=new Date(curYear,curMonth,0).getDate();
   const vis=activeVenue==="All"?events:events.filter(e=>e.venue===activeVenue);
-  if(events.length===0){grid.innerHTML='<div style="grid-column:1/-1;padding:2rem;text-align:center;background:#fff;border:0.5px solid #e0ded8;border-radius:10px;color:#888780;font-size:13px;">No shows loaded yet. Click <strong>&#8635; Sync shows</strong> above to fetch verified concerts from Ticketmaster.</div>';return;}
+  if(events.length===0){
+    grid.innerHTML=`<div style="grid-column:1/-1;padding:2rem;text-align:center;background:#fff;border:0.5px solid #e0ded8;border-radius:10px;color:#888780;font-size:13px;">No shows loaded yet. Click <strong>↻ Sync shows</strong> above to fetch verified concerts from Ticketmaster.</div>`;
+    return;
+  }
   for(let i=0;i<42;i++){
     let dn,isOther=false,ds;
-    if(i<firstDay){dn=dip-firstDay+i+1;isOther=true;const m=curMonth===0?11:curMonth-1;const y=curMonth===0?curYear-1:curYear;ds=y+"-"+String(m+1).padStart(2,"0")+"-"+String(dn).padStart(2,"0");}
-    else if(i>=firstDay+dim){dn=i-firstDay-dim+1;isOther=true;const m=curMonth===11?0:curMonth+1;const y=curMonth===11?curYear+1:curYear;ds=y+"-"+String(m+1).padStart(2,"0")+"-"+String(dn).padStart(2,"0");}
-    else{dn=i-firstDay+1;ds=curYear+"-"+String(curMonth+1).padStart(2,"0")+"-"+String(dn).padStart(2,"0");}
-    const cell=document.createElement("div");cell.className="cell"+(isOther?" other":"");
+    if(i<firstDay){dn=dip-firstDay+i+1;isOther=true;const m=curMonth===0?11:curMonth-1;const y=curMonth===0?curYear-1:curYear;ds=`${y}-${String(m+1).padStart(2,"0")}-${String(dn).padStart(2,"0")}`;}
+    else if(i>=firstDay+dim){dn=i-firstDay-dim+1;isOther=true;const m=curMonth===11?0:curMonth+1;const y=curMonth===11?curYear+1:curYear;ds=`${y}-${String(m+1).padStart(2,"0")}-${String(dn).padStart(2,"0")}`;}
+    else{dn=i-firstDay+1;ds=`${curYear}-${String(curMonth+1).padStart(2,"0")}-${String(dn).padStart(2,"0")}`;}
+    const cell=document.createElement("div");
+    cell.className="cell"+(isOther?" other":"");
     const isTd=!isOther&&dn===today.getDate()&&curMonth===today.getMonth()&&curYear===today.getFullYear();
-    if(isTd)cell.classList.add("today");cell.innerHTML='<div class="dn">'+dn+'</div>';
+    if(isTd)cell.classList.add("today");
+    cell.innerHTML=`<div class="dn">${dn}</div>`;
     const devs=vis.filter(e=>e.date===ds);
     devs.slice(0,3).forEach(ev=>{
-      const c=gc(ev.venue),pill=document.createElement("a");pill.className="epill";
-      if(isTracked(ev.artist))pill.classList.add("tracked");if(ev.source==="manual")pill.classList.add("manual");
-      pill.style.background=c.bg;pill.style.color=c.text;pill.textContent=ev.artist;
-      pill.title=ev.artist+" @ "+ev.venue+(ev.onSaleDate?"\n&#127903; On sale: "+ev.onSaleDate:"");
-      pill.onclick=(e)=>{e.preventDefault();showDetail(ev.id);};pill.href="#";cell.appendChild(pill);
+      const c=gc(ev.venue),pill=document.createElement("a");
+      pill.className="epill";
+      if(isTracked(ev.artist))pill.classList.add("tracked");
+      if(ev.source==="manual")pill.classList.add("manual");
+      pill.style.background=c.bg;pill.style.color=c.text;
+      pill.textContent=ev.artist;
+      pill.title=ev.artist+" @ "+ev.venue+(ev.onSaleDate?"\n🎟 On sale: "+ev.onSaleDate:"");
+      pill.onclick=(e)=>{e.preventDefault();showDetail(ev.id);};pill.href="#";
+      cell.appendChild(pill);
     });
-    if(devs.length>3){const m=document.createElement("div");m.className="more";m.textContent="+"+(devs.length-3)+" more";m.onclick=()=>showDayEvents(ds,devs);cell.appendChild(m);}
+    if(devs.length>3){const m=document.createElement("div");m.className="more";m.textContent=`+${devs.length-3} more`;m.onclick=()=>showDayEvents(ds,devs);cell.appendChild(m);}
     grid.appendChild(cell);
   }
 }
 function showDetail(id){
   const ev=events.find(e=>e.id===id);if(!ev)return;
   const c=gc(ev.venue);const isT=isTracked(ev.artist);
-  const sourceBadge=ev.source==="manual"?'<span class="source-badge manual">&#9995; Manually added</span>':'<span class="source-badge tm">&#10003; Verified via Ticketmaster</span>';
-  document.getElementById("detTitle").innerHTML=ev.artist+(isT?'<span class="tracked-badge">Tracked</span>':"");
-  const ticketBtn=ev.ticketUrl?'<div class="det-row"><a class="ticket-link" href="'+ev.ticketUrl+'" target="_blank">&#127903; Buy tickets</a></div>':"";
-  document.getElementById("detMeta").innerHTML='<div class="det-row"><span style="width:9px;height:9px;border-radius:50%;background:'+c.dot+';display:inline-block;flex-shrink:0;"></span><strong>'+ev.venue+'</strong></div><div class="det-row"><span>&#128197;</span><span>'+fmtDate(ev.date)+' &nbsp;&middot;&nbsp; '+ev.time+'</span></div>'+(ev.genre?'<div class="det-row"><span>&#127925;</span><span>'+ev.genre+'</span></div>':"")+onSaleHtml(ev)+ticketBtn+'<div class="det-row" style="margin-top:4px;">'+sourceBadge+'</div>';
+  const sourceBadge=ev.source==="manual"?`<span class="source-badge manual">✋ Manually added</span>`:`<span class="source-badge tm">✓ Verified via Ticketmaster</span>`;
+  document.getElementById("detTitle").innerHTML=ev.artist+(isT?`<span class="tracked-badge">Tracked</span>`:"");
+  const ticketBtn=ev.ticketUrl?`<div class="det-row"><a class="ticket-link" href="${ev.ticketUrl}" target="_blank">🎫 Buy tickets</a></div>`:"";
+  document.getElementById("detMeta").innerHTML=`
+    <div class="det-row"><span style="width:9px;height:9px;border-radius:50%;background:${c.dot};display:inline-block;flex-shrink:0;"></span><strong>${ev.venue}</strong></div>
+    <div class="det-row"><span>📅</span><span>${fmtDate(ev.date)} &nbsp;·&nbsp; ${ev.time}</span></div>
+    ${ev.genre?`<div class="det-row"><span>🎵</span><span>${ev.genre}</span></div>`:""}
+    ${onSaleHtml(ev)}${ticketBtn}
+    <div class="det-row" style="margin-top:4px;">${sourceBadge}</div>`;
   renderRsvpBtns(id);renderRsvpFaces(id);
-  const p=document.getElementById("detailPanel");p.classList.add("open");p.scrollIntoView({behavior:"smooth",block:"nearest"});
+  const p=document.getElementById("detailPanel");p.classList.add("open");
+  p.scrollIntoView({behavior:"smooth",block:"nearest"});
 }
 function renderRsvpBtns(id){
   const myN=userName||"Me";const myR=(rsvps[id]||{})[myN];
-  document.getElementById("rsvpBtns").innerHTML='<button class="rbtn'+(myR==="going"?" r-going":"")+'" onclick="setRsvp('+id+','+"'going'"+')"'+ '>Going</button><button class="rbtn'+(myR==="maybe"?" r-maybe":"")+'" onclick="setRsvp('+id+','+"'maybe'"+')"'+ '>Maybe</button><button class="rbtn'+(myR==="interested"?" r-interested":"")+'" onclick="setRsvp('+id+','+"'interested'"+')"'+ '>Interested</button>';
+  document.getElementById("rsvpBtns").innerHTML=`
+    <button class="rbtn${myR==="going"?" r-going":""}" onclick="setRsvp(${id},'going')">Going</button>
+    <button class="rbtn${myR==="maybe"?" r-maybe":""}" onclick="setRsvp(${id},'maybe')">Maybe</button>
+    <button class="rbtn${myR==="interested"?" r-interested":""}" onclick="setRsvp(${id},'interested')">Interested</button>`;
 }
 function renderRsvpFaces(id){
   const er=rsvps[id]||{};const ent=Object.entries(er);
   if(!ent.length){document.getElementById("rsvpFaces").innerHTML="";return;}
-  const g=ent.filter(([,v])=>v==="going").map(([k])=>k);const m=ent.filter(([,v])=>v==="maybe").map(([k])=>k);const i=ent.filter(([,v])=>v==="interested").map(([k])=>k);
-  document.getElementById("rsvpFaces").innerHTML=[g.length?'<span class="rbadge going">'+g.join(", ")+" going</span>":"",m.length?'<span class="rbadge maybe">'+m.join(", ")+" maybe</span>":"",i.length?'<span class="rbadge interested">'+i.join(", ")+" interested</span>":""].filter(Boolean).join("");
+  const g=ent.filter(([,v])=>v==="going").map(([k])=>k);
+  const m=ent.filter(([,v])=>v==="maybe").map(([k])=>k);
+  const i=ent.filter(([,v])=>v==="interested").map(([k])=>k);
+  document.getElementById("rsvpFaces").innerHTML=[g.length?`<span class="rbadge going">${g.join(", ")} going</span>`:"",m.length?`<span class="rbadge maybe">${m.join(", ")} maybe</span>`:"",i.length?`<span class="rbadge interested">${i.join(", ")} interested</span>`:""].filter(Boolean).join("");
 }
 async function setRsvp(id,status){
   if(!userName){const n=prompt("Enter your name for RSVPs:");if(!n)return;userName=n;document.getElementById("userName").value=n;localStorage.setItem(LS_NAME,n);}
   if(!rsvps[id])rsvps[id]={};
-  if(rsvps[id][userName]===status)delete rsvps[id][userName];else rsvps[id][userName]=status;
+  if(rsvps[id][userName]===status)delete rsvps[id][userName];
+  else rsvps[id][userName]=status;
   await saveToBin();renderRsvpBtns(id);renderRsvpFaces(id);renderFriendsFeed();renderNewShowsBanner();
 }
 function showDayEvents(ds,devs){
   document.getElementById("detTitle").textContent="Shows on "+fmtDate(ds);
-  document.getElementById("detMeta").innerHTML=devs.map(ev=>{const c=gc(ev.venue);return'<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:0.5px solid #f1efe8;cursor:pointer;" onclick="showDetail('+ev.id+')"><span style="width:8px;height:8px;border-radius:50%;background:'+c.dot+';flex-shrink:0;display:inline-block;"></span><span style="flex:1;font-weight:500;font-size:13px;">'+ev.artist+'</span><span style="font-size:11px;color:#888780;">'+ev.venue+'</span></div>';}).join("");
-  document.getElementById("rsvpBtns").innerHTML="";document.getElementById("rsvpFaces").innerHTML="";document.getElementById("detailPanel").classList.add("open");
+  document.getElementById("detMeta").innerHTML=devs.map(ev=>{
+    const c=gc(ev.venue);
+    return`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:0.5px solid #f1efe8;cursor:pointer;" onclick="showDetail(${ev.id})">
+      <span style="width:8px;height:8px;border-radius:50%;background:${c.dot};flex-shrink:0;display:inline-block;"></span>
+      <span style="flex:1;font-weight:500;font-size:13px;">${ev.artist}</span>
+      <span style="font-size:11px;color:#888780;">${ev.venue}</span></div>`;
+  }).join("");
+  document.getElementById("rsvpBtns").innerHTML="";document.getElementById("rsvpFaces").innerHTML="";
+  document.getElementById("detailPanel").classList.add("open");
 }
 function closeDetail(){document.getElementById("detailPanel").classList.remove("open");}
 function fmtDate(str){const[y,m,d]=str.split("-").map(Number);return new Date(y,m-1,d).toLocaleDateString("default",{weekday:"short",month:"long",day:"numeric"});}
-function toggleAdd(){addFormOpen=!addFormOpen;document.getElementById("addForm").style.display=addFormOpen?"block":"none";document.getElementById("addIcon").textContent=addFormOpen?"−":"+";}
+function toggleAdd(){
+  addFormOpen=!addFormOpen;
+  document.getElementById("addForm").style.display=addFormOpen?"block":"none";
+  document.getElementById("addIcon").textContent=addFormOpen?"−":"+";
+}
 async function addManualShow(){
-  const artist=document.getElementById("fArtist").value.trim();const date=document.getElementById("fDate").value;
-  const time=document.getElementById("fTime").value;const venue=document.getElementById("fVenue").value;
-  const genre=document.getElementById("fGenre").value.trim();const onSaleDate=document.getElementById("fOnSale").value||null;
+  const artist=document.getElementById("fArtist").value.trim();
+  const date=document.getElementById("fDate").value;
+  const time=document.getElementById("fTime").value;
+  const venue=document.getElementById("fVenue").value;
+  const genre=document.getElementById("fGenre").value.trim();
+  const onSaleDate=document.getElementById("fOnSale").value||null;
   const ticketUrl=document.getElementById("fTicketUrl").value.trim()||null;
   if(!artist||!date){alert("Please enter an artist and date.");return;}
   const[h,m]=time.split(":");const hr=parseInt(h);const ampm=hr>=12?"PM":"AM";const hr12=hr%12||12;
-  const nev={id:nextId++,artist,date,time:hr12+":"+m+" "+ampm,venue,genre,source:"manual"};
+  const nev={id:nextId++,artist,date,time:`${hr12}:${m} ${ampm}`,venue,genre,source:"manual"};
   if(onSaleDate)nev.onSaleDate=onSaleDate;if(ticketUrl)nev.ticketUrl=ticketUrl;
   events.push(nev);await saveToBin();
   const[y,mo]=date.split("-").map(Number);curYear=y;curMonth=mo-1;
@@ -624,41 +721,45 @@ async function addManualShow(){
 }
 function renderArtistList(){
   const list=document.getElementById("artistList");
-  if(!userName){list.innerHTML='<div class="empty" style="color:#888780;font-size:12px;">Enter your name at the top to track artists.</div>';return;}
-  if(!trackedArtists.length){list.innerHTML='<div class="empty">No artists tracked yet. Add names below.</div>';return;}
+  if(!userName){list.innerHTML=`<div class="empty" style="color:#888780;font-size:12px;">Enter your name at the top to track artists.</div>`;return;}
+  if(!trackedArtists.length){list.innerHTML=`<div class="empty">No artists tracked yet. Add names below.</div>`;return;}
   list.innerHTML=trackedArtists.map((a,i)=>{
     const display=getArtistDisplayName(a);const typed=getArtistTypedName(a);
     const didCorrect=typeof a==="object"&&a.matched&&a.matched!==a.typed;
-    const meta=didCorrect?'<div class="a-meta">you typed "'+typed+'"</div>':"";
-    return'<div class="artist-row"><div class="a-avatar">'+display[0].toUpperCase()+'</div><div style="flex:1;"><div class="a-name">'+display+'</div>'+meta+'</div><button class="a-remove" onclick="removeArtist('+i+')">remove</button></div>';
+    const meta=didCorrect?`<div class="a-meta">you typed "${typed}"</div>`:"";
+    return`<div class="artist-row"><div class="a-avatar">${display[0].toUpperCase()}</div><div style="flex:1;"><div class="a-name">${display}</div>${meta}</div><button class="a-remove" onclick="removeArtist(${i})">remove</button></div>`;
   }).join("");
 }
-async function addArtist(){
+async async function addArtist(){
   if(!userName){showArtistResult("Please enter your name at the top first.","err");return;}
   const input=document.getElementById("artistInput");const name=input.value.trim();if(!name)return;
   const alreadyTracked=trackedArtists.some(a=>normalizeArtist(getArtistDisplayName(a))===normalizeArtist(name)||normalizeArtist(getArtistTypedName(a))===normalizeArtist(name));
-  if(alreadyTracked){showArtistResult('"'+name+'" is already in your tracked artists.',"err");return;}
+  if(alreadyTracked){showArtistResult(`"${name}" is already in your tracked artists.`,"err");return;}
   const btn=document.getElementById("addArtistBtn");btn.disabled=true;btn.textContent="Checking…";
   showArtistResult("Searching Ticketmaster for this artist…","");
-  const result=await tmSearchArtist(name);btn.disabled=false;btn.textContent="Add";
+  const result=await tmSearchArtist(name);
+  btn.disabled=false;btn.textContent="Add";
   if(result.found){
     const entry=result.matchedName.toLowerCase()===name.toLowerCase()?name:{typed:name,matched:result.matchedName};
     trackedArtists.push(entry);await saveTrackedArtists();input.value="";renderArtistList();renderCalendar();
-    if(result.matchedName.toLowerCase()!==name.toLowerCase()){showArtistResult('✓ Found as "'+result.matchedName+'" on Ticketmaster — tracking '+result.count+' upcoming Seattle show'+(result.count!==1?"s":"")+".","ok");}
-    else{showArtistResult("✓ Found on Ticketmaster — tracking "+result.count+" upcoming Seattle show"+(result.count!==1?"s":"")+"." ,"ok");}
+    if(result.matchedName.toLowerCase()!==name.toLowerCase()){showArtistResult(`✓ Found as "${result.matchedName}" on Ticketmaster — tracking ${result.count} upcoming Seattle show${result.count!==1?"s":""}.`,"ok");}
+    else{showArtistResult(`✓ Found on Ticketmaster — tracking ${result.count} upcoming Seattle show${result.count!==1?"s":""}.`,"ok");}
   }else{
     trackedArtists.push(name);await saveTrackedArtists();input.value="";renderArtistList();renderCalendar();
-    showArtistResult('Added "'+name+'" — no upcoming Seattle shows found right now, but you'+"'ll be notified if any are announced.","err");
+    showArtistResult(`Added "${name}" — no upcoming Seattle shows found right now, but you'll be notified if any are announced.`,"err");
   }
 }
 async function tmSearchArtist(name){
-  const now=new Date();const start=now.toISOString().replace(/\.\d+Z$/,"Z");
-  const endDate=new Date(now.getFullYear(),now.getMonth()+6,now.getDate());const end=endDate.toISOString().replace(/\.\d+Z$/,"Z");
+  const now=new Date();
+  const start=now.toISOString().replace(/\.\d+Z$/,"Z");
+  const endDate=new Date(now.getFullYear(),now.getMonth()+6,now.getDate());
+  const end=endDate.toISOString().replace(/\.\d+Z$/,"Z");
   const queries=[name];const stripped=name.replace(/\s+/g,"");if(stripped!==name)queries.push(stripped);
   for(const q of queries){
     try{
-      const url=TM_BASE+"/events.json?apikey="+TM_KEY+"&keyword="+encodeURIComponent(q)+"&city=Seattle&stateCode=WA&classificationName=music&startDateTime="+start+"&endDateTime="+end+"&size=10&sort=date,asc";
-      const resp=await fetch(url);if(!resp.ok)continue;const data=await resp.json();if(data.fault)continue;
+      const url=`${TM_BASE}/events.json?apikey=${TM_KEY}&keyword=${encodeURIComponent(q)}&city=Seattle&stateCode=WA&classificationName=music&startDateTime=${start}&endDateTime=${end}&size=10&sort=date,asc`;
+      const resp=await fetch(url);if(!resp.ok)continue;
+      const data=await resp.json();if(data.fault)continue;
       const batch=(data._embedded&&data._embedded.events)||[];
       const matches=batch.filter(tme=>{const en=normalizeArtist(tme.name||"");const qn=normalizeArtist(q);return en===qn||en.includes(qn)||qn.includes(en);});
       if(matches.length>0)return{found:true,matchedName:matches[0].name,count:matches.length};
@@ -667,24 +768,26 @@ async function tmSearchArtist(name){
   return{found:false};
 }
 function showArtistResult(msg,type){
-  const el=document.getElementById("artistSearchResult");el.textContent=msg;el.className="artist-search-result"+(type?" "+type:"");el.style.display="block";
+  const el=document.getElementById("artistSearchResult");
+  el.textContent=msg;el.className="artist-search-result"+(type?" "+type:"");el.style.display="block";
   if(type==="ok")setTimeout(()=>{el.style.display="none";},5000);
 }
 async function removeArtist(i){trackedArtists.splice(i,1);await saveTrackedArtists();renderArtistList();renderCalendar();}
 function renderFriendsFeed(){
-  const feed=document.getElementById("friendsFeed");const ids=Object.keys(rsvps).map(Number);
-  if(!ids.length){feed.innerHTML='<div class="empty">No RSVPs yet. Go to Calendar, click a show, and mark yourself Going, Maybe, or Interested.</div>';return;}
+  const feed=document.getElementById("friendsFeed");
+  const ids=Object.keys(rsvps).map(Number);
+  if(!ids.length){feed.innerHTML=`<div class="empty">No RSVPs yet. Go to Calendar, click a show, and mark yourself Going, Maybe, or Interested.</div>`;return;}
   const now=new Date().toISOString().split("T")[0];
   const upcoming=events.filter(e=>ids.includes(e.id)&&e.date>=now).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,30);
-  if(!upcoming.length){feed.innerHTML='<div class="empty">No upcoming RSVP'+"'d shows.</div>';return;}
+  if(!upcoming.length){feed.innerHTML=`<div class="empty">No upcoming RSVP'd shows.</div>`;return;}
   feed.innerHTML=upcoming.map(ev=>{
     const c=gc(ev.venue);const er=rsvps[ev.id]||{};
     const g=Object.entries(er).filter(([,v])=>v==="going").map(([k])=>k);
     const m=Object.entries(er).filter(([,v])=>v==="maybe").map(([k])=>k);
     const i=Object.entries(er).filter(([,v])=>v==="interested").map(([k])=>k);
     const oss=onSaleStatus(ev);
-    const saleTag=oss&&oss!=="past"?'<span class="onsale-badge '+oss+'" style="font-size:10px;padding:2px 8px;">'+(oss==="now"?"&#127903; On sale NOW":oss==="soon"?"&#127903; On sale soon":"&#127903; On sale "+fmtDate(ev.onSaleDate))+'</span>':"";
-    return'<div class="fe-row" onclick="jumpToShow('+ev.id+')"><div class="fe-dot" style="background:'+c.dot+'"></div><div class="fe-info"><div class="fe-artist">'+ev.artist+'</div><div class="fe-venue">'+ev.venue+' &nbsp;&middot;&nbsp; '+fmtDate(ev.date)+'</div><div class="fe-badges">'+ [saleTag,g.length?'<span class="rbadge going">'+g.join(", ")+" going</span>":"",m.length?'<span class="rbadge maybe">'+m.join(", ")+" maybe</span>":"",i.length?'<span class="rbadge interested">'+i.join(", ")+" interested</span>":""].filter(Boolean).join("")+'</div></div></div>';
+    const saleTag=oss&&oss!=="past"?`<span class="onsale-badge ${oss}" style="font-size:10px;padding:2px 8px;">${oss==="now"?"🎟 On sale NOW":oss==="soon"?"🎟 On sale soon":"🎟 On sale "+fmtDate(ev.onSaleDate)}</span>`:"";
+    return`<div class="fe-row" onclick="jumpToShow(${ev.id})"><div class="fe-dot" style="background:${c.dot}"></div><div class="fe-info"><div class="fe-artist">${ev.artist}</div><div class="fe-venue">${ev.venue} &nbsp;·&nbsp; ${fmtDate(ev.date)}</div><div class="fe-badges">${[saleTag,g.length?`<span class="rbadge going">${g.join(", ")} going</span>`:"",m.length?`<span class="rbadge maybe">${m.join(", ")} maybe</span>`:"",i.length?`<span class="rbadge interested">${i.join(", ")} interested</span>`:""].filter(Boolean).join("")}</div></div></div>`;
   }).join("");
 }
 function jumpToShow(id){
@@ -692,12 +795,18 @@ function jumpToShow(id){
   const[y,mo]=ev.date.split("-").map(Number);curYear=y;curMonth=mo-1;
   document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
   document.querySelectorAll(".pane").forEach(p=>p.classList.remove("active"));
-  document.querySelectorAll(".tab")[0].classList.add("active");document.getElementById("pane-calendar").classList.add("active");
+  document.querySelectorAll(".tab")[0].classList.add("active");
+  document.getElementById("pane-calendar").classList.add("active");
   renderCalendar();showDetail(id);
 }
-function populateVenueSelect(){VENUES.forEach(v=>{const o=document.createElement("option");o.value=v;o.textContent=v;document.getElementById("fVenue").appendChild(o);});}
+function populateVenueSelect(){
+  VENUES.forEach(v=>{
+    const o=document.createElement("option");o.value=v;o.textContent=v;
+    document.getElementById("fVenue").appendChild(o);
+  });
+}
+
 populateVenueSelect();
-// Render immediately so UI appears even if storage is slow
 renderFilterBar();renderCalendar();renderArtistList();
 initStorage().then(async()=>{
   await loadTrackedArtists();
