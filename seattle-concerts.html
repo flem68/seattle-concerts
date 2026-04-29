@@ -210,22 +210,22 @@ h1{font-size:22px;font-weight:500;color:#1a1a18;margin-bottom:0.25rem;}
 <div id="friendsFeed"></div>
 </div>
 </div>
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script>
 const firebaseConfig={apiKey:"AIzaSyBofQYAuXk-BM3XlR0uu4lSwaeEBuTGaUg",authDomain:"seattle-concerts-1dec7.firebaseapp.com",projectId:"seattle-concerts-1dec7",storageBucket:"seattle-concerts-1dec7.firebasestorage.app",messagingSenderId:"210347369404",appId:"1:210347369404:web:50ee5991da96cc8e60c1b9"};
-const app=initializeApp(firebaseConfig);
-const db=getFirestore(app);
+firebase.initializeApp(firebaseConfig);
+const db=firebase.firestore();
 window.firebaseLoadArtists=async function(username){
   if(!username)return null;
   const key=username.toLowerCase().trim();
-  try{const ref=doc(db,"artists",key);const snap=await getDoc(ref);if(snap.exists())return snap.data().list||[];return[];}
+  try{const snap=await db.collection("artists").doc(key).get();if(snap.exists)return snap.data().list||[];return[];}
   catch(e){console.warn("Firebase read error:",e);return null;}
 };
 window.firebaseSaveArtists=async function(username,artistList){
   if(!username)return false;
   const key=username.toLowerCase().trim();
-  try{const ref=doc(db,"artists",key);await setDoc(ref,{list:artistList,updatedAt:new Date().toISOString()});return true;}
+  try{await db.collection("artists").doc(key).set({list:artistList,updatedAt:new Date().toISOString()});return true;}
   catch(e){console.warn("Firebase write error:",e);return false;}
 };
 window.firebaseReady=true;
