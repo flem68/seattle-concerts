@@ -245,7 +245,7 @@ let rsvps={},userName="";
 let nextId=1000,syncTimer=null,isSyncing=false,lastSyncTs=null;
 
 // Firebase setup
-firebase.initializeApp({apiKey:"AIzaSyBofQYAuXk-BM3XlR0uu4lSwaeEBuTGaUg",authDomain:"seattle-concerts-1dec7.firebaseapp.com",projectId:"seattle-concerts-1dec7",storageBucket:"seattle-concerts-1dec7.firebasestorage.app",messagingSenderId:"210347369404",appId:"1:210347369404:web:50ee5991da96cc8e60c1b9"});
+firebase.initializeApp({apiKey:"AIzaSyA6rN4sySF8CK6SQ5cfAOMRP6vQt2AOV2E",authDomain:"seattle-concerts-9ca4b.firebaseapp.com",projectId:"seattle-concerts-9ca4b",storageBucket:"seattle-concerts-9ca4b.firebasestorage.app",messagingSenderId:"160284765253",appId:"1:160284765253:web:a710f4f4a7af5c88e8c72c"});
 const db=firebase.firestore();
 function setFBStatus(msg,col){const el=document.getElementById("firebaseStatus");if(el){el.textContent=msg;el.style.color=col||"#b4b2a9";}}
 async function firebaseLoad(username){
