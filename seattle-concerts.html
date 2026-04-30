@@ -538,18 +538,18 @@ async function runSync(auto=false){
 }
 
 async function getLatestBinRecord(){
-  try{const r=await fetch(`${JSONBIN_BASE}/b/${BIN_ID}/latest`,{headers:{"X-Master-Key":JSONBIN_KEY}});const d=await r.json();return d.record||d;}catch(e){return{};}
+  try{
+    const snap=await db.collection("calendar").doc("shared").get();
+    if(snap.exists)return snap.data();
+    return{};
+  }catch(e){console.warn("Firebase read error:",e);return{};}
 }
 async function initStorage(){
-  // Load name from localStorage immediately - no network needed
   const stored=localStorage.getItem(LS_NAME);
   if(stored){userName=stored;document.getElementById("userName").value=stored;}
-  // Load JSONBin in background with timeout - don't block rendering
   setSyncStatus("Connecting...","syncing");
-  const timeout=new Promise(r=>setTimeout(r,5000));
-  const load=loadFromBin().catch(()=>{});
-  await Promise.race([load,timeout]);
-  setSyncStatus("","");
+  try{await loadFromBin();setSyncStatus("Synced","");}
+  catch(e){setSyncStatus("","");}
 }
 async function loadFromBin(){
   const rec=await getLatestBinRecord();
@@ -562,18 +562,18 @@ async function saveToBin(){
   syncTimer=setTimeout(async()=>{
     setSyncStatus("Saving...","syncing");
     try{
-      await fetch(`${JSONBIN_BASE}/b/${BIN_ID}`,{method:"PUT",headers:{"Content-Type":"application/json","X-Master-Key":JSONBIN_KEY},body:JSON.stringify({events,rsvps,lastSync:lastSyncTs||null})});
+      await db.collection("calendar").doc("shared").set({events,rsvps,lastSync:lastSyncTs||null});
       setSyncStatus("Synced ✓","");
-    }catch(e){setSyncStatus("Sync failed","err");}
+    }catch(e){setSyncStatus("Sync failed","err");console.warn("Firebase write error:",e);}
   },800);
 }
 async function saveToBinFull(lastSync){
   setSyncStatus("Saving...","syncing");
   try{
     lastSyncTs=lastSync;
-    await fetch(`${JSONBIN_BASE}/b/${BIN_ID}`,{method:"PUT",headers:{"Content-Type":"application/json","X-Master-Key":JSONBIN_KEY},body:JSON.stringify({events,rsvps,lastSync})});
+    await db.collection("calendar").doc("shared").set({events,rsvps,lastSync});
     setSyncStatus("Synced ✓","");
-  }catch(e){setSyncStatus("Sync failed","err");}
+  }catch(e){setSyncStatus("Sync failed","err");console.warn("Firebase write error:",e);}
 }
 function setSyncStatus(msg,cls){const el=document.getElementById("syncStatus");el.textContent=msg;el.className="sync-status"+(cls?" "+cls:"");}
 function updateLastSyncLabel(ts){
