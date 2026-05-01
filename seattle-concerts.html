@@ -1007,13 +1007,15 @@ async function migrateArtistNames(){
     for(const item of batch){
       await db.collection("artists").doc(item.id).set(item.data);
     }
+    // Clear localStorage cache so fixed data gets reloaded from Firebase
+    localStorage.removeItem("seattle-cal-artists");
     localStorage.setItem("seattle-cal-artist-migration-v1","done");
     console.log("Artist name migration complete");
   }catch(e){console.warn("Migration error:",e);}
 }
 initStorage().then(async()=>{
-  await migrateArtistNames();
   await loadTrackedArtists();
+  await migrateArtistNames();
   renderFilterBar();renderCalendar();renderArtistList();
   await runSync(true);
   if(trackedArtists.length){await checkTrackedArtists();}
