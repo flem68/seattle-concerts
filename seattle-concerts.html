@@ -299,13 +299,27 @@ function onSaleStatus(ev){
   if(diff===0)return"now";if(diff>0&&diff<=7)return"soon";if(diff>7)return"future";return"past";
 }
 function onSaleHtml(ev){
-  if(!ev.onSaleDate)return"";
+  let html="";
+  if(ev.preSaleDates&&ev.preSaleDates.length){
+    const now=new Date();now.setHours(0,0,0,0);
+    ev.preSaleDates.forEach(ps=>{
+      if(!ps.date)return;
+      const sale=new Date(ps.date+"T00:00:00");
+      const diff=Math.round((sale-now)/86400000);
+      let status="past";if(diff===0)status="now";else if(diff>0&&diff<=7)status="soon";else if(diff>7)status="future";
+      const dateStr=fmtDate(ps.date);
+      const label=status==="now"?`🎫 ${ps.name} ON SALE TODAY`:status==="soon"?`🎫 ${ps.name} in ${diff} day${diff!==1?"s":""} — ${dateStr}`:status==="future"?`🎫 ${ps.name} starts ${dateStr}`:`🎫 ${ps.name} active (started ${dateStr})`;
+      html+=`<div class="det-row"><span class="onsale-badge ${status}">${label}</span></div>`;
+    });
+  }
+  if(!ev.onSaleDate)return html;
   const status=onSaleStatus(ev)||"past";
   const dateStr=fmtDate(ev.onSaleDate);
   const now=new Date();now.setHours(0,0,0,0);
   const daysAway=Math.round((new Date(ev.onSaleDate+"T00:00:00")-now)/86400000);
   const labels={now:`🎟 Tickets ON SALE TODAY — ${dateStr}`,soon:`🎟 On sale in ${daysAway} day${daysAway!==1?"s":""} — ${dateStr}`,future:`🎟 Tickets go on sale ${dateStr}`,past:`🎟 Tickets on sale now (went on sale ${dateStr})`};
-  return`<div class="det-row"><span class="onsale-badge ${status}">${labels[status]}</span></div>`;
+  html+=`<div class="det-row"><span class="onsale-badge ${status}">${labels[status]}</span></div>`;
+  return html;
 }
 
 function parseTmEvent(tme,fallbackVenue){
@@ -317,12 +331,15 @@ function parseTmEvent(tme,fallbackVenue){
   if(!venue)return null;
   let onSaleDate=null;
   try{const sd=tme.sales&&tme.sales.public&&tme.sales.public.startDateTime;if(sd)onSaleDate=sd.split("T")[0];}catch(e){}
+  let preSaleDates=[];
+  try{const ps=tme.sales&&tme.sales.presales;if(ps&&ps.length){preSaleDates=ps.map(p=>({name:p.name||"Presale",date:p.startDateTime?p.startDateTime.split("T")[0]:null})).filter(p=>p.date);}}catch(e){}
   const ticketUrl=tme.url||null;
   let time="8:00 PM";
   try{const lt=tme.dates.start.localTime;if(lt){const[h,m]=lt.split(":");const hr=parseInt(h);time=`${hr%12||12}:${m} ${hr>=12?"PM":"AM"}`;}}catch(e){}
   const ev={id:nextId++,artist,date,time,venue,genre:"",source:"ticketmaster"};
   if(onSaleDate)ev.onSaleDate=onSaleDate;
   if(ticketUrl)ev.ticketUrl=ticketUrl;
+  if(preSaleDates.length)ev.preSaleDates=preSaleDates;
   return ev;
 }
 
