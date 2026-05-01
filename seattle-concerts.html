@@ -151,6 +151,7 @@ h1{font-size:22px;font-weight:500;color:#1a1a18;margin-bottom:0.25rem;}
 <button class="tab active" onclick="switchTab('calendar',this)">Calendar</button>
 <button class="tab" onclick="switchTab('tracked',this)">My artists</button>
 <button class="tab" onclick="switchTab('friends',this)">Friends</button>
+<button class="tab" onclick="switchTab('community',this)">Friends' artists</button>
 </div>
 <div id="pane-calendar" class="pane active">
 <div class="cal-header">
@@ -197,7 +198,13 @@ h1{font-size:22px;font-weight:500;color:#1a1a18;margin-bottom:0.25rem;}
 </div>
 <div id="pane-tracked" class="pane">
 <div class="section-label">Artists I follow</div>
-<div class="private-note">🎸 Your tracked artists are personal to you. Enter your name at the top to get started. Blue outlines on shows indicate any friend's tracked artist.</div>
+<div class="private-note">🎸 Your tracked artists sync across all your devices. Enter your name at the top to get started. Blue outlines on shows indicate any friend's tracked artist.</div>
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding:6px 0;">
+<label style="font-size:12px;color:#5f5e5a;flex:1;">Share my artists with friends</label>
+<div id="shareToggle" onclick="toggleArtistSharing()" style="width:36px;height:20px;border-radius:10px;background:#185FA5;cursor:pointer;position:relative;transition:background 0.2s;">
+<div id="shareToggleKnob" style="width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:2px;right:2px;transition:right 0.2s;"></div>
+</div>
+</div>
 <div id="firebaseStatus" style="font-size:10px;color:#b4b2a9;margin-bottom:6px;"></div>
 <div id="artistList"></div>
 <div class="add-row">
@@ -209,6 +216,10 @@ h1{font-size:22px;font-weight:500;color:#1a1a18;margin-bottom:0.25rem;}
 <div id="pane-friends" class="pane">
 <div class="section-label">Upcoming shows — who's going</div>
 <div id="friendsFeed"></div>
+</div>
+<div id="pane-community" class="pane">
+<div class="section-label">Friends' artists</div>
+<div id="communityFeed"></div>
 </div>
 </div>
 <script>
@@ -256,8 +267,21 @@ async function firebaseLoad(username){
 }
 async function firebaseSave(username,list){
   if(!username)return false;
-  try{await db.collection("artists").doc(username.toLowerCase().trim()).set({list:list,updatedAt:new Date().toISOString()});return true;}
+  try{await db.collection("artists").doc(username.toLowerCase().trim()).set({list:list,shared:artistSharingEnabled,updatedAt:new Date().toISOString()});return true;}
   catch(e){console.warn("FB write:",e);return false;}
+}
+async function firebaseLoadAll(){
+  try{
+    const snap=await db.collection("artists").get();
+    const all={};
+    snap.forEach(doc=>{
+      const data=doc.data();
+      if(data.shared!==false&&data.list&&data.list.length>0){
+        all[doc.id]=data.list;
+      }
+    });
+    return all;
+  }catch(e){console.warn("FB loadAll:",e);return{};}
 }
 function syncTrackedArtists(){}
 async function loadTrackedArtists(){
@@ -659,7 +683,7 @@ function switchTab(name,el){
   document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
   document.querySelectorAll(".pane").forEach(p=>p.classList.remove("active"));
   el.classList.add("active");document.getElementById("pane-"+name).classList.add("active");
-  if(name==="tracked")renderArtistList();if(name==="friends")renderFriendsFeed();
+  if(name==="tracked"){renderArtistList();initSharingToggle();}if(name==="friends")renderFriendsFeed();if(name==="community")renderCommunityFeed();
 }
 function changeMonth(dir){
   curMonth+=dir;if(curMonth>11){curMonth=0;curYear++;}if(curMonth<0){curMonth=11;curYear--;}
@@ -879,8 +903,91 @@ function populateVenueSelect(){
   });
 }
 
+let artistSharingEnabled=true;
+function initSharingToggle(){
+  const stored=localStorage.getItem("seattle-cal-sharing");
+  artistSharingEnabled=stored!=="false";
+  updateSharingToggleUI();
+}
+function updateSharingToggleUI(){
+  const toggle=document.getElementById("shareToggle");
+  const knob=document.getElementById("shareToggleKnob");
+  if(!toggle||!knob)return;
+  toggle.style.background=artistSharingEnabled?"#185FA5":"#d3d1c7";
+  knob.style.right=artistSharingEnabled?"2px":"18px";
+}
+function toggleArtistSharing(){
+  artistSharingEnabled=!artistSharingEnabled;
+  localStorage.setItem("seattle-cal-sharing",artistSharingEnabled?"true":"false");
+  updateSharingToggleUI();
+  if(userName)saveTrackedArtists();
+}
+async function renderCommunityFeed(){
+  const feed=document.getElementById("communityFeed");
+  if(!feed)return;
+  feed.innerHTML='<div class="empty">Loading...</div>';
+  const all=await firebaseLoadAll();
+  const entries=Object.entries(all);
+  if(!entries.length){feed.innerHTML='<div class="empty">No friends have shared their artists yet.</div>';return;}
+
+  // Build aggregated count
+  const counts={};
+  entries.forEach(([user,list])=>{
+    list.forEach(a=>{
+      const name=typeof a==="object"?a.matched||a.typed:a;
+      counts[name]=(counts[name]||0)+1;
+    });
+  });
+  const sorted=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+
+  // Most tracked section
+  let html='<div class="section-label" style="margin-top:0;">Most tracked</div>';
+  html+=sorted.map(([name,count])=>{
+    const shows=events.filter(ev=>isTrackedName(ev.artist,name));
+    const clickable=shows.length>0?'onclick="searchArtistShows('+"'"+name+"'"+')" style="cursor:pointer;"':'style="opacity:0.7;"';
+    return'<div class="artist-row" '+clickable+'><div class="a-avatar">'+name[0].toUpperCase()+'</div><div style="flex:1;"><div class="a-name">'+name+'</div></div><span style="font-size:12px;color:#888780;background:#f1efe8;padding:2px 8px;border-radius:10px;">'+count+' '+( count===1?"person":"people")+'</span></div>';
+  }).join("");
+
+  // Per-friend section
+  html+='<div class="section-label" style="margin-top:1.5rem;">By friend</div>';
+  const myKey=userName?userName.toLowerCase().trim():"";
+  entries.forEach(([user,list])=>{
+    if(user===myKey)return; // skip self
+    const displayName=user.charAt(0).toUpperCase()+user.slice(1);
+    const artistNames=list.map(a=>typeof a==="object"?a.matched||a.typed:a);
+    html+='<div style="margin-bottom:1rem;"><div style="font-size:13px;font-weight:500;color:#1a1a18;margin-bottom:6px;">&#127928; '+displayName+'</div>';
+    html+=artistNames.map(name=>{
+      const alreadyTracked=trackedArtists.some(a=>{const n=typeof a==="object"?a.matched||a.typed:a;return n.toLowerCase()===name.toLowerCase();});
+      if(alreadyTracked){
+        return'<span style="display:inline-block;margin:3px;padding:3px 10px;border-radius:12px;font-size:11px;background:#E1F5EE;color:#085041;border:0.5px solid #0F6E56;">'+name+' ✓</span>';
+      }
+      return'<span onclick="addArtistFromFriend('+"'"+name+"'"+')" style="display:inline-block;margin:3px;padding:3px 10px;border-radius:12px;font-size:11px;background:#f1efe8;color:#5f5e5a;border:0.5px solid #d3d1c7;cursor:pointer;" title="Add to my artists">'+name+' +</span>';
+    }).join("");
+    html+='</div>';
+  });
+
+  feed.innerHTML=html;
+}
+function isTrackedName(evArtist,name){
+  const ev=evArtist.toLowerCase();const n=name.toLowerCase();
+  return ev.includes(n)||n.includes(ev)||normalizeArtist(ev)===normalizeArtist(n);
+}
+function searchArtistShows(name){
+  const show=events.find(ev=>isTrackedName(ev.artist,name));
+  if(show)jumpToShow(show.id);
+}
+async function addArtistFromFriend(name){
+  if(!userName){alert("Enter your name at the top first.");return;}
+  const already=trackedArtists.some(a=>{const n=typeof a==="object"?a.matched||a.typed:a;return n.toLowerCase()===name.toLowerCase();});
+  if(already)return;
+  trackedArtists.push(name);
+  await saveTrackedArtists();
+  renderArtistList();renderCalendar();
+  renderCommunityFeed();
+}
 populateVenueSelect();
 renderFilterBar();renderCalendar();renderArtistList();
+initSharingToggle();
 initStorage().then(async()=>{
   await loadTrackedArtists();
   renderFilterBar();renderCalendar();renderArtistList();
