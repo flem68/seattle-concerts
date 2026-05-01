@@ -483,13 +483,36 @@ function dismissNewShows(){document.getElementById("newShowsBanner").innerHTML="
 function renderOnSaleBanner(){
   const banner=document.getElementById("onsaleBanner");
   const now=new Date();now.setHours(0,0,0,0);
-  const upcoming=events.filter(ev=>{if(!ev.onSaleDate)return false;return Math.round((new Date(ev.onSaleDate+"T00:00:00")-now)/86400000)>=0;}).sort((a,b)=>new Date(a.onSaleDate+"T00:00:00")-new Date(b.onSaleDate+"T00:00:00"));
+  // Build list of upcoming sale entries (public on-sale + presales)
+  const entries=[];
+  events.forEach(ev=>{
+    // Public on-sale
+    if(ev.onSaleDate){
+      const daysAway=Math.round((new Date(ev.onSaleDate+"T00:00:00")-now)/86400000);
+      if(daysAway>=0)entries.push({ev,date:ev.onSaleDate,daysAway,label:"On sale",isPresale:false});
+    }
+    // Presales
+    if(ev.preSaleDates&&ev.preSaleDates.length){
+      ev.preSaleDates.forEach(ps=>{
+        if(!ps.date)return;
+        const daysAway=Math.round((new Date(ps.date+"T00:00:00")-now)/86400000);
+        if(daysAway>=0)entries.push({ev,date:ps.date,daysAway,label:ps.name||"Presale",isPresale:true});
+      });
+    }
+  });
+  // Sort by date, dedupe same event+date
+  const seen=new Set();
+  const upcoming=entries.filter(e=>{
+    const key=e.ev.id+"-"+e.date;
+    if(seen.has(key))return false;
+    seen.add(key);return true;
+  }).sort((a,b)=>a.date.localeCompare(b.date));
   if(!upcoming.length){banner.innerHTML="";return;}
-  const rows=upcoming.map(ev=>{
-    const status=onSaleStatus(ev);const now2=new Date();now2.setHours(0,0,0,0);
-    const daysAway=Math.round((new Date(ev.onSaleDate+"T00:00:00")-now2)/86400000);
-    const label=status==="now"?"On sale TODAY":status==="soon"?`On sale in ${daysAway} day${daysAway!==1?"s":""}`:`On sale ${fmtDate(ev.onSaleDate)}`;
-    return`<div class="onsale-row" onclick="jumpToShow(${ev.id})"><div style="width:8px;height:8px;border-radius:50%;background:${gc(ev.venue).dot};flex-shrink:0;"></div><span class="onsale-artist">${ev.artist}</span><span class="onsale-venue">${ev.venue}</span><span class="onsale-date-badge ${status}">${label}</span></div>`;
+  const rows=upcoming.map(({ev,date,daysAway,label,isPresale})=>{
+    const status=daysAway===0?"now":daysAway<=7?"soon":"future";
+    const icon=isPresale?"🎫":"🎟";
+    const displayLabel=status==="now"?`${icon} ${label} TODAY`:status==="soon"?`${icon} ${label} in ${daysAway} day${daysAway!==1?"s":""}`:`${icon} ${label} ${fmtDate(date)}`;
+    return`<div class="onsale-row" onclick="jumpToShow(${ev.id})"><div style="width:8px;height:8px;border-radius:50%;background:${gc(ev.venue).dot};flex-shrink:0;"></div><span class="onsale-artist">${ev.artist}</span><span class="onsale-venue">${ev.venue}</span><span class="onsale-date-badge ${status}">${displayLabel}</span></div>`;
   }).join("");
   banner.innerHTML=`<div class="onsale-banner"><div class="onsale-banner-title">🎟 Tickets going on sale soon — ${upcoming.length} show${upcoming.length!==1?"s":""}</div>${rows}</div>`;
 }
