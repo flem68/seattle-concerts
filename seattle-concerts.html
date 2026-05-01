@@ -303,7 +303,7 @@ async function saveTrackedArtists(){
   if(ok){setFBStatus("Saved ✓","#0F6E56");setTimeout(()=>setFBStatus("",""),3000);}
   else{setFBStatus("Save failed - stored locally","#E24B4A");}
 }
-function getArtistDisplayName(a){return typeof a==="object"?a.matched||a.typed:a;}
+function getArtistDisplayName(a){return typeof a==="object"?a.typed||a.matched:a;}
 function getArtistTypedName(a){return typeof a==="object"?a.typed:a;}
 function isTracked(evArtist){
   return trackedArtists.some(a=>{
@@ -988,7 +988,31 @@ async function addArtistFromFriend(name){
 populateVenueSelect();
 renderFilterBar();renderCalendar();renderArtistList();
 initSharingToggle();
+// One-time migration: fix artist display names (typed vs matched)
+async function migrateArtistNames(){
+  const migrated=localStorage.getItem("seattle-cal-artist-migration-v1");
+  if(migrated)return;
+  try{
+    const snap=await db.collection("artists").get();
+    const batch=[];
+    snap.forEach(doc=>{
+      const list=doc.data().list||[];
+      const fixed=list.map(a=>{
+        if(typeof a==="object"&&a.typed)return a.typed;
+        return a;
+      });
+      const changed=JSON.stringify(fixed)!==JSON.stringify(list);
+      if(changed)batch.push({id:doc.id,data:{...doc.data(),list:fixed}});
+    });
+    for(const item of batch){
+      await db.collection("artists").doc(item.id).set(item.data);
+    }
+    localStorage.setItem("seattle-cal-artist-migration-v1","done");
+    console.log("Artist name migration complete");
+  }catch(e){console.warn("Migration error:",e);}
+}
 initStorage().then(async()=>{
+  await migrateArtistNames();
   await loadTrackedArtists();
   renderFilterBar();renderCalendar();renderArtistList();
   await runSync(true);
