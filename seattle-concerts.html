@@ -445,13 +445,19 @@ async function checkTrackedArtists(){
           const venue=matchVenue(tmVenueName)||tmVenueName||"Other";
           let onSaleDate=null;
           try{const sd=tme.sales&&tme.sales.public&&tme.sales.public.startDateTime;if(sd)onSaleDate=sd.split("T")[0];}catch(e){}
+          let preSaleDates=[];try{const ps=tme.sales&&tme.sales.presales;if(ps&&ps.length){preSaleDates=ps.map(p=>({name:p.name||"Presale",date:p.startDateTime?p.startDateTime.split("T")[0]:null})).filter(p=>p.date);}}catch(e){}
           const ticketUrl=tme.url||null;
           let time="8:00 PM";
           try{const lt=tme.dates.start.localTime;if(lt){const[h,m]=lt.split(":");const hr=parseInt(h);time=`${hr%12||12}:${m} ${hr>=12?"PM":"AM"}`;}}catch(e){}
-          const exists=events.some(e=>normalizeArtist(e.artist)===normalizeArtist(evArtist)&&e.date===date);
-          if(!exists){
+          const existingIdx=events.findIndex(e=>normalizeArtist(e.artist)===normalizeArtist(evArtist)&&e.date===date);
+          if(existingIdx>=0){
+            const ex=events[existingIdx];
+            if(!ex.onSaleDate&&onSaleDate)ex.onSaleDate=onSaleDate;
+            if(!ex.preSaleDates&&preSaleDates.length)ex.preSaleDates=preSaleDates;
+          } else {
             const nev={id:nextId++,artist:evArtist,date,time,venue,genre:"",source:"ticketmaster"};
             if(onSaleDate)nev.onSaleDate=onSaleDate;if(ticketUrl)nev.ticketUrl=ticketUrl;
+            if(preSaleDates.length)nev.preSaleDates=preSaleDates;
             events.push(nev);newShows.push(nev);
           }
         });
