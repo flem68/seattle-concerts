@@ -501,7 +501,7 @@ function renderNewShowsBanner(){
   const now=new Date().toISOString().split("T")[0];
   const upcoming=events.filter(ev=>{
     if(ev.date<now)return false;
-    const myR=(rsvps[rsvpKey(ev)]||{})[userName];
+    const myR=(rsvps[rsvpKey(ev)]||{})[userName]||(rsvps[String(ev.id)]||{})[userName];
     if(myR)return false;
     return isMyTracked(ev.artist);
   }).sort((a,b)=>a.date.localeCompare(b.date));
@@ -514,9 +514,10 @@ function dismissNewShows(){document.getElementById("newShowsBanner").innerHTML="
 function renderOnSaleBanner(){
   const banner=document.getElementById("onsaleBanner");
   const now=new Date();now.setHours(0,0,0,0);
-  // Build list of upcoming sale entries (public on-sale + presales)
+  // Build list of upcoming sale entries for tracked artists only
   const entries=[];
   events.forEach(ev=>{
+    if(trackedArtists.length>0&&!isMyTracked(ev.artist))return;
     // Public on-sale
     if(ev.onSaleDate){
       const daysAway=Math.round((new Date(ev.onSaleDate+"T00:00:00")-now)/86400000);
@@ -762,27 +763,33 @@ function showDetail(id){
 function renderRsvpBtns(id){
   const ev=events.find(e=>e.id===id);if(!ev)return;
   const key=rsvpKey(ev);
-  const myN=userName||"Me";const myR=(rsvps[key]||{})[myN];
+  const myN=userName||"Me";
+  const myR=(rsvps[key]||{})[myN]||(rsvps[String(id)]||{})[myN];
   document.getElementById("rsvpBtns").innerHTML=`
     <button class="rbtn${myR==="going"?" r-going":""}" onclick="setRsvp(${id},'going')">Going</button>
-    <button class="rbtn${myR==="maybe"?" r-maybe":""}" onclick="setRsvp(${id},'maybe')">Maybe</button>
     <button class="rbtn${myR==="interested"?" r-interested":""}" onclick="setRsvp(${id},'interested')">Interested</button>`;
 }
 function renderRsvpFaces(id){
   const ev=events.find(e=>e.id===id);
   const key=ev?rsvpKey(ev):String(id);
-  const er=rsvps[key]||{};const ent=Object.entries(er);
+  // Merge old numeric key data with new stable key data
+  const er=Object.assign({},rsvps[String(id)]||{},rsvps[key]||{});
+  const ent=Object.entries(er);
   if(!ent.length){document.getElementById("rsvpFaces").innerHTML="";return;}
   const g=ent.filter(([,v])=>v==="going").map(([k])=>k);
   const m=ent.filter(([,v])=>v==="maybe").map(([k])=>k);
   const i=ent.filter(([,v])=>v==="interested").map(([k])=>k);
-  document.getElementById("rsvpFaces").innerHTML=[g.length?`<span class="rbadge going">${g.join(", ")} going</span>`:"",m.length?`<span class="rbadge maybe">${m.join(", ")} maybe</span>`:"",i.length?`<span class="rbadge interested">${i.join(", ")} interested</span>`:""].filter(Boolean).join("");
+  // Merge maybe into interested for display
+  const allInterested=[...new Set([...m,...i])];
+  document.getElementById("rsvpFaces").innerHTML=[g.length?`<span class="rbadge going">${g.join(", ")} going</span>`:"",allInterested.length?`<span class="rbadge interested">${allInterested.join(", ")} interested</span>`:""].filter(Boolean).join("");
 }
 async function setRsvp(id,status){
   if(!userName){const n=prompt("Enter your name for RSVPs:");if(!n)return;userName=n;document.getElementById("userName").value=n;localStorage.setItem(LS_NAME,n);}
   const ev=events.find(e=>e.id===id);if(!ev)return;
   const key=rsvpKey(ev);
   if(!rsvps[key])rsvps[key]={};
+  // Migrate any legacy "maybe" to "interested"
+  if(rsvps[key][userName]==="maybe")rsvps[key][userName]="interested";
   if(rsvps[key][userName]===status)delete rsvps[key][userName];
   else rsvps[key][userName]=status;
   await saveToBin();renderRsvpBtns(id);renderRsvpFaces(id);renderFriendsFeed();renderNewShowsBanner();
@@ -884,10 +891,10 @@ function renderFriendsFeed(){
   const rsvpedKeys=new Set(Object.keys(rsvps).filter(k=>Object.keys(rsvps[k]||{}).length>0));
   if(!rsvpedKeys.size){feed.innerHTML=`<div class="empty">No RSVPs yet. Go to Calendar, click a show, and mark yourself Going, Maybe, or Interested.</div>`;return;}
   const now=new Date().toISOString().split("T")[0];
-  const upcoming=events.filter(e=>rsvpedKeys.has(rsvpKey(e))&&e.date>=now).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,30);
+  const upcoming=events.filter(e=>(rsvpedKeys.has(rsvpKey(e))||rsvpedKeys.has(String(e.id)))&&e.date>=now).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,30);
   if(!upcoming.length){feed.innerHTML=`<div class="empty">No upcoming RSVP'd shows.</div>`;return;}
   feed.innerHTML=upcoming.map(ev=>{
-    const c=gc(ev.venue);const er=rsvps[rsvpKey(ev)]||{};
+    const c=gc(ev.venue);const er=Object.assign({},rsvps[String(ev.id)]||{},rsvps[rsvpKey(ev)]||{});
     const g=Object.entries(er).filter(([,v])=>v==="going").map(([k])=>k);
     const m=Object.entries(er).filter(([,v])=>v==="maybe").map(([k])=>k);
     const i=Object.entries(er).filter(([,v])=>v==="interested").map(([k])=>k);
