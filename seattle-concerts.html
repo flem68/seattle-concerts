@@ -247,6 +247,7 @@ function matchVenue(name){
 }
 
 function normalizeArtist(name){return name.toLowerCase().replace(/[^a-z0-9]/g,"");}
+function rsvpKey(ev){return normalizeArtist(ev.artist)+"|"+ev.date+"|"+normalizeArtist(ev.venue);}
 
 const today=new Date();
 let curYear=today.getFullYear(),curMonth=today.getMonth();
@@ -498,10 +499,10 @@ function renderNewShowsBanner(){
   const banner=document.getElementById("newShowsBanner");
   if(!userName||!trackedArtists.length){banner.innerHTML="";return;}
   const now=new Date().toISOString().split("T")[0];
-  const myRsvpd=new Set(Object.keys(rsvps).filter(id=>{const r=rsvps[id]||{};return r[userName];}).map(Number));
   const upcoming=events.filter(ev=>{
     if(ev.date<now)return false;
-    if(myRsvpd.has(ev.id))return false;
+    const myR=(rsvps[rsvpKey(ev)]||{})[userName];
+    if(myR)return false;
     return isMyTracked(ev.artist);
   }).sort((a,b)=>a.date.localeCompare(b.date));
   if(!upcoming.length){banner.innerHTML="";return;}
@@ -759,14 +760,18 @@ function showDetail(id){
   p.scrollIntoView({behavior:"smooth",block:"nearest"});
 }
 function renderRsvpBtns(id){
-  const myN=userName||"Me";const myR=(rsvps[id]||{})[myN];
+  const ev=events.find(e=>e.id===id);if(!ev)return;
+  const key=rsvpKey(ev);
+  const myN=userName||"Me";const myR=(rsvps[key]||{})[myN];
   document.getElementById("rsvpBtns").innerHTML=`
     <button class="rbtn${myR==="going"?" r-going":""}" onclick="setRsvp(${id},'going')">Going</button>
     <button class="rbtn${myR==="maybe"?" r-maybe":""}" onclick="setRsvp(${id},'maybe')">Maybe</button>
     <button class="rbtn${myR==="interested"?" r-interested":""}" onclick="setRsvp(${id},'interested')">Interested</button>`;
 }
 function renderRsvpFaces(id){
-  const er=rsvps[id]||{};const ent=Object.entries(er);
+  const ev=events.find(e=>e.id===id);
+  const key=ev?rsvpKey(ev):String(id);
+  const er=rsvps[key]||{};const ent=Object.entries(er);
   if(!ent.length){document.getElementById("rsvpFaces").innerHTML="";return;}
   const g=ent.filter(([,v])=>v==="going").map(([k])=>k);
   const m=ent.filter(([,v])=>v==="maybe").map(([k])=>k);
@@ -775,9 +780,11 @@ function renderRsvpFaces(id){
 }
 async function setRsvp(id,status){
   if(!userName){const n=prompt("Enter your name for RSVPs:");if(!n)return;userName=n;document.getElementById("userName").value=n;localStorage.setItem(LS_NAME,n);}
-  if(!rsvps[id])rsvps[id]={};
-  if(rsvps[id][userName]===status)delete rsvps[id][userName];
-  else rsvps[id][userName]=status;
+  const ev=events.find(e=>e.id===id);if(!ev)return;
+  const key=rsvpKey(ev);
+  if(!rsvps[key])rsvps[key]={};
+  if(rsvps[key][userName]===status)delete rsvps[key][userName];
+  else rsvps[key][userName]=status;
   await saveToBin();renderRsvpBtns(id);renderRsvpFaces(id);renderFriendsFeed();renderNewShowsBanner();
 }
 function showDayEvents(ds,devs){
@@ -874,13 +881,13 @@ function showArtistResult(msg,type){
 async function removeArtist(i){trackedArtists.splice(i,1);await saveTrackedArtists();renderArtistList();renderCalendar();}
 function renderFriendsFeed(){
   const feed=document.getElementById("friendsFeed");
-  const ids=Object.keys(rsvps).map(Number);
-  if(!ids.length){feed.innerHTML=`<div class="empty">No RSVPs yet. Go to Calendar, click a show, and mark yourself Going, Maybe, or Interested.</div>`;return;}
+  const rsvpedKeys=new Set(Object.keys(rsvps).filter(k=>Object.keys(rsvps[k]||{}).length>0));
+  if(!rsvpedKeys.size){feed.innerHTML=`<div class="empty">No RSVPs yet. Go to Calendar, click a show, and mark yourself Going, Maybe, or Interested.</div>`;return;}
   const now=new Date().toISOString().split("T")[0];
-  const upcoming=events.filter(e=>ids.includes(e.id)&&e.date>=now).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,30);
+  const upcoming=events.filter(e=>rsvpedKeys.has(rsvpKey(e))&&e.date>=now).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,30);
   if(!upcoming.length){feed.innerHTML=`<div class="empty">No upcoming RSVP'd shows.</div>`;return;}
   feed.innerHTML=upcoming.map(ev=>{
-    const c=gc(ev.venue);const er=rsvps[ev.id]||{};
+    const c=gc(ev.venue);const er=rsvps[rsvpKey(ev)]||{};
     const g=Object.entries(er).filter(([,v])=>v==="going").map(([k])=>k);
     const m=Object.entries(er).filter(([,v])=>v==="maybe").map(([k])=>k);
     const i=Object.entries(er).filter(([,v])=>v==="interested").map(([k])=>k);
@@ -989,6 +996,37 @@ populateVenueSelect();
 renderFilterBar();renderCalendar();renderArtistList();
 initSharingToggle();
 // One-time migration: fix artist display names (typed vs matched)
+async function migrateRsvpKeys(){
+  // Migrate old numeric RSVP keys to stable artist|date|venue keys
+  const done=localStorage.getItem("seattle-cal-rsvp-migration-v1");
+  if(done)return;
+  try{
+    const rec=await getLatestBinRecord();
+    const oldRsvps=rec.rsvps||{};
+    const keys=Object.keys(oldRsvps);
+    if(!keys.length){localStorage.setItem("seattle-cal-rsvp-migration-v1","done");return;}
+    // Check if already using stable keys (contains | character)
+    const alreadyMigrated=keys.every(k=>k.includes("|"));
+    if(alreadyMigrated){localStorage.setItem("seattle-cal-rsvp-migration-v1","done");return;}
+    // Convert numeric keys to stable keys
+    const newRsvps={};
+    keys.forEach(k=>{
+      const numId=parseInt(k);
+      const ev=events.find(e=>e.id===numId);
+      if(ev){
+        const stableKey=rsvpKey(ev);
+        newRsvps[stableKey]=oldRsvps[k];
+      }
+      // Also keep any already-stable keys
+      if(k.includes("|"))newRsvps[k]=oldRsvps[k];
+    });
+    rsvps=newRsvps;
+    await saveToBin();
+    localStorage.setItem("seattle-cal-rsvp-migration-v1","done");
+    console.log("RSVP key migration complete:",Object.keys(newRsvps).length,"RSVPs migrated");
+    renderFriendsFeed();renderCalendar();
+  }catch(e){console.warn("RSVP migration error:",e);}
+}
 async function migrateArtistNames(){
   const migrated=localStorage.getItem("seattle-cal-artist-migration-v1");
   if(migrated)return;
@@ -1015,6 +1053,7 @@ async function migrateArtistNames(){
 }
 initStorage().then(async()=>{
   await loadTrackedArtists();
+  await migrateRsvpKeys();
   await migrateArtistNames();
   renderFilterBar();renderCalendar();renderArtistList();
   await runSync(true);
