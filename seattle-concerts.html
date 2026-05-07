@@ -506,7 +506,7 @@ function renderNewShowsBanner(){
     return isMyTracked(ev.artist);
   }).sort((a,b)=>a.date.localeCompare(b.date));
   if(!upcoming.length){
-    if(trackedArtists.length>0){
+    if(userName){
       banner.innerHTML='<div class="onsale-banner"><div class="onsale-banner-title" style="margin-bottom:0;">🎟 None of your tracked artists have upcoming on-sale dates</div></div>';
     } else {
       banner.innerHTML="";
@@ -547,7 +547,7 @@ function renderOnSaleBanner(){
     seen.add(key);return true;
   }).sort((a,b)=>a.date.localeCompare(b.date));
   if(!upcoming.length){
-    if(trackedArtists.length>0){
+    if(userName){
       banner.innerHTML='<div class="onsale-banner"><div class="onsale-banner-title" style="margin-bottom:0;">🎟 None of your tracked artists have upcoming on-sale dates</div></div>';
     } else {
       banner.innerHTML="";
