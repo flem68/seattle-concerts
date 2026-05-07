@@ -505,9 +505,16 @@ function renderNewShowsBanner(){
     if(myR)return false;
     return isMyTracked(ev.artist);
   }).sort((a,b)=>a.date.localeCompare(b.date));
-  if(!upcoming.length){banner.innerHTML="";return;}
+  if(!upcoming.length){
+    if(trackedArtists.length>0){
+      banner.innerHTML='<div class="onsale-banner"><div class="onsale-banner-title" style="margin-bottom:0;">🎟 None of your tracked artists have upcoming on-sale dates</div></div>';
+    } else {
+      banner.innerHTML="";
+    }
+    return;
+  }
   const rows=upcoming.map(ev=>`<div class="newshows-row" onclick="jumpToShow(${ev.id})"><div style="width:8px;height:8px;border-radius:50%;background:${gc(ev.venue).dot};flex-shrink:0;"></div><span class="newshows-artist">${ev.artist}</span><span class="newshows-venue">${ev.venue}</span><span class="newshows-date">${fmtDate(ev.date)}</span></div>`).join("");
-  banner.innerHTML=`<div class="newshows-banner"><div class="newshows-banner-title"><span>🎸 Upcoming shows for your tracked artists — ${upcoming.length} show${upcoming.length!==1?"s":""}</span></div>${rows}</div>`;
+  banner.innerHTML=`<div class="newshows-banner"><div class="newshows-banner-title"><span>🎸 Upcoming shows for your tracked artists — ${upcoming.length} show${upcoming.length!==1?"s":""}</span></div><div style="font-size:11px;color:#534AB7;margin-bottom:6px;">Tap any show for ticket details and to RSVP</div>${rows}</div>`;
 }
 function dismissNewShows(){document.getElementById("newShowsBanner").innerHTML="";}
 
@@ -539,7 +546,14 @@ function renderOnSaleBanner(){
     if(seen.has(key))return false;
     seen.add(key);return true;
   }).sort((a,b)=>a.date.localeCompare(b.date));
-  if(!upcoming.length){banner.innerHTML="";return;}
+  if(!upcoming.length){
+    if(trackedArtists.length>0){
+      banner.innerHTML='<div class="onsale-banner"><div class="onsale-banner-title" style="margin-bottom:0;">🎟 None of your tracked artists have upcoming on-sale dates</div></div>';
+    } else {
+      banner.innerHTML="";
+    }
+    return;
+  }
   const rows=upcoming.map(({ev,date,daysAway,label,isPresale})=>{
     const status=daysAway===0?"now":daysAway<=7?"soon":"future";
     const icon=isPresale?"🎫":"🎟";
