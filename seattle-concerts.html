@@ -998,16 +998,16 @@ initSharingToggle();
 // One-time migration: fix artist display names (typed vs matched)
 async function migrateRsvpKeys(){
   // Migrate old numeric RSVP keys to stable artist|date|venue keys
-  const done=localStorage.getItem("seattle-cal-rsvp-migration-v1");
+  const done=localStorage.getItem("seattle-cal-rsvp-migration-v2");
   if(done)return;
   try{
     const rec=await getLatestBinRecord();
     const oldRsvps=rec.rsvps||{};
     const keys=Object.keys(oldRsvps);
-    if(!keys.length){localStorage.setItem("seattle-cal-rsvp-migration-v1","done");return;}
+    if(!keys.length){localStorage.setItem("seattle-cal-rsvp-migration-v2","done");return;}
     // Check if already using stable keys (contains | character)
     const alreadyMigrated=keys.every(k=>k.includes("|"));
-    if(alreadyMigrated){localStorage.setItem("seattle-cal-rsvp-migration-v1","done");return;}
+    if(alreadyMigrated){localStorage.setItem("seattle-cal-rsvp-migration-v2","done");return;}
     // Convert numeric keys to stable keys
     const newRsvps={};
     keys.forEach(k=>{
@@ -1022,7 +1022,7 @@ async function migrateRsvpKeys(){
     });
     rsvps=newRsvps;
     await saveToBin();
-    localStorage.setItem("seattle-cal-rsvp-migration-v1","done");
+    localStorage.setItem("seattle-cal-rsvp-migration-v2","done");
     console.log("RSVP key migration complete:",Object.keys(newRsvps).length,"RSVPs migrated");
     renderFriendsFeed();renderCalendar();
   }catch(e){console.warn("RSVP migration error:",e);}
@@ -1053,11 +1053,11 @@ async function migrateArtistNames(){
 }
 initStorage().then(async()=>{
   await loadTrackedArtists();
-  await migrateRsvpKeys();
   await migrateArtistNames();
   renderFilterBar();renderCalendar();renderArtistList();
   await runSync(true);
   if(trackedArtists.length){await checkTrackedArtists();}
+  await migrateRsvpKeys();
 });
 setInterval(async()=>{
   const rec=await getLatestBinRecord();
