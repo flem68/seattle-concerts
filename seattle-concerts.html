@@ -638,6 +638,22 @@ async function runSync(auto=false){
     });
     await new Promise(r=>setTimeout(r,300));
   }
+  // Zoo Tunes - query by Ticketmaster venue ID
+  prog.textContent="Fetching Zoo Tunes…";
+  try{
+    const zooUrl=`${TM_BASE}/events.json?apikey=${TM_KEY}&venueId=123005&startDateTime=${start}&endDateTime=${end}&size=50&sort=date,asc`;
+    const zooResp=await fetch(zooUrl);
+    if(zooResp.ok){
+      const zooData=await zooResp.json();
+      if(!zooData.fault){
+        const zooBatch=(zooData._embedded&&zooData._embedded.events)||[];
+        zooBatch.forEach(tme=>{
+          const ev=parseTmEvent(tme,"Zoo Tunes");
+          if(ev&&!tmEvents.some(e=>normalizeArtist(e.artist)===normalizeArtist(ev.artist)&&e.date===ev.date))tmEvents.push(ev);
+        });
+      }
+    }
+  }catch(e){console.warn("Zoo Tunes fetch error:",e);}
 
   const merged=[...tmEvents];
   manualEvents.forEach(me=>{
