@@ -233,6 +233,10 @@ h1{font-size:22px;font-weight:500;color:#1a1a18;margin-bottom:0.25rem;}
 <div id="pane-friends" class="pane">
 <div class="section-label">Upcoming shows — who's going</div>
 <div id="friendsFeed"></div>
+<div id="pastShowsSection" style="margin-top:1.5rem;">
+<div class="section-label">Past shows — last 14 days</div>
+<div id="pastShowsFeed"></div>
+</div>
 </div>
 <div id="pane-community" class="pane">
 <div class="section-label">Friends' artists</div>
@@ -800,7 +804,7 @@ function switchTab(name,el){
   document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
   document.querySelectorAll(".pane").forEach(p=>p.classList.remove("active"));
   el.classList.add("active");document.getElementById("pane-"+name).classList.add("active");
-  if(name==="tracked"){renderArtistList();initSharingToggle();}if(name==="friends")renderFriendsFeed();if(name==="community")renderCommunityFeed();
+  if(name==="tracked"){renderArtistList();initSharingToggle();}if(name==="friends"){renderFriendsFeed();renderPastShows();}if(name==="community")renderCommunityFeed();
 }
 function changeMonth(dir){
   curMonth+=dir;if(curMonth>11){curMonth=0;curYear++;}if(curMonth<0){curMonth=11;curYear--;}
@@ -1028,6 +1032,49 @@ function jumpToShow(id){
   document.querySelectorAll(".tab")[0].classList.add("active");
   document.getElementById("pane-calendar").classList.add("active");
   renderCalendar();showDetail(id);
+}
+async function renderPastShows(){
+  const feed=document.getElementById("pastShowsFeed");
+  if(!feed)return;
+  feed.innerHTML='<div style="font-size:12px;color:#b4b2a9;padding:4px 0;">Loading...</div>';
+
+  // Get all group tracked artists
+  const allArtists=await firebaseLoadAll();
+  const groupArtistNames=new Set();
+  Object.values(allArtists).forEach(list=>{
+    list.forEach(a=>{
+      const name=typeof a==="object"?a.typed||a.matched:a;
+      if(name)groupArtistNames.add(name.toLowerCase());
+    });
+  });
+
+  // Find shows in last 14 days
+  const nowLocal=new Date();
+  const today=nowLocal.getFullYear()+"-"+String(nowLocal.getMonth()+1).padStart(2,"0")+"-"+String(nowLocal.getDate()).padStart(2,"0");
+  const cutoff=new Date(nowLocal);cutoff.setDate(cutoff.getDate()-14);
+  const cutoffStr=cutoff.getFullYear()+"-"+String(cutoff.getMonth()+1).padStart(2,"0")+"-"+String(cutoff.getDate()).padStart(2,"0");
+
+  const past=events.filter(ev=>{
+    if(ev.date>=today||ev.date<cutoffStr)return false;
+    // Check if any group member tracks this artist
+    return Array.from(groupArtistNames).some(n=>isTrackedName(ev.artist,n));
+  }).sort((a,b)=>b.date.localeCompare(a.date));
+
+  if(!past.length){
+    feed.innerHTML='<div class="empty">No past shows from tracked artists in the last 14 days.</div>';
+    return;
+  }
+
+  feed.innerHTML=past.map(ev=>{
+    const c=gc(ev.venue);
+    return`<div class="fe-row" onclick="jumpToShow(${ev.id})">
+      <div class="fe-dot" style="background:${c.dot}"></div>
+      <div class="fe-info">
+        <div class="fe-artist">${ev.artist}</div>
+        <div class="fe-venue">${ev.venue} &nbsp;·&nbsp; ${fmtDate(ev.date)}</div>
+      </div>
+    </div>`;
+  }).join("");
 }
 let currentReviewKey=null;
 async function renderReviews(ev){
