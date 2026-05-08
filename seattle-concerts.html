@@ -498,7 +498,8 @@ async function checkTrackedArtists(){
 function renderNewShowsBanner(){
   const banner=document.getElementById("newShowsBanner");
   if(!userName||!trackedArtists.length){banner.innerHTML="";return;}
-  const now=new Date().toISOString().split("T")[0];
+  const nowLocal=new Date();
+  const now=nowLocal.getFullYear()+"-"+String(nowLocal.getMonth()+1).padStart(2,"0")+"-"+String(nowLocal.getDate()).padStart(2,"0");
   const upcoming=events.filter(ev=>{
     if(ev.date<now)return false;
     const myR=(rsvps[rsvpKey(ev)]||{})[userName]||(rsvps[String(ev.id)]||{})[userName];
@@ -904,7 +905,8 @@ function renderFriendsFeed(){
   const feed=document.getElementById("friendsFeed");
   const rsvpedKeys=new Set(Object.keys(rsvps).filter(k=>Object.keys(rsvps[k]||{}).length>0));
   if(!rsvpedKeys.size){feed.innerHTML=`<div class="empty">No RSVPs yet. Go to Calendar, click a show, and mark yourself Going, Maybe, or Interested.</div>`;return;}
-  const now=new Date().toISOString().split("T")[0];
+  const nowLocal=new Date();
+  const now=nowLocal.getFullYear()+"-"+String(nowLocal.getMonth()+1).padStart(2,"0")+"-"+String(nowLocal.getDate()).padStart(2,"0");
   const upcoming=events.filter(e=>(rsvpedKeys.has(rsvpKey(e))||rsvpedKeys.has(String(e.id)))&&e.date>=now).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,30);
   if(!upcoming.length){feed.innerHTML=`<div class="empty">No upcoming RSVP'd shows.</div>`;return;}
   feed.innerHTML=upcoming.map(ev=>{
