@@ -610,7 +610,13 @@ async function runSync(auto=false){
   prog.textContent="Fetching Tractor Tavern…";
   const tractorEvents=await fetchTractorTavern();
   tractorEvents.forEach(te=>{
-    if(!tmEvents.some(e=>normalizeArtist(e.artist)===normalizeArtist(te.artist)&&e.date===te.date))tmEvents.push(te);
+    // Deduplicate: check exact match OR if one artist name contains the other (handles "Night One/Two" variants)
+    const isDup=tmEvents.some(e=>{
+      if(e.date!==te.date||normalizeArtist(e.venue)!==normalizeArtist(te.venue))return false;
+      const en=normalizeArtist(e.artist);const tn=normalizeArtist(te.artist);
+      return en===tn||en.includes(tn)||tn.includes(en);
+    });
+    if(!isDup)tmEvents.push(te);
   });
 
   prog.textContent="Fetching El Corazon, Neumos & Barboza…";
@@ -1045,6 +1051,12 @@ async function migrateRsvpKeys(){
     });
     rsvps=newRsvps;
     await saveToBin();
+    // Also migrate any legacy "maybe" values to "interested"
+    Object.keys(newRsvps).forEach(k=>{
+      Object.keys(newRsvps[k]||{}).forEach(user=>{
+        if(newRsvps[k][user]==="maybe")newRsvps[k][user]="interested";
+      });
+    });
     localStorage.setItem("seattle-cal-rsvp-migration-v2","done");
     console.log("RSVP key migration complete:",Object.keys(newRsvps).length,"RSVPs migrated");
     renderFriendsFeed();renderCalendar();
