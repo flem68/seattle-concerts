@@ -133,6 +133,17 @@ h1{font-size:22px;font-weight:500;color:#1a1a18;margin-bottom:0.25rem;}
 .dismiss-btn{background:none;border:none;cursor:pointer;font-size:16px;color:#888780;line-height:1;padding:0 0 0 8px;}
 .dismiss-btn:hover{color:#444441;}
 .private-note{font-size:11px;color:#b4b2a9;background:#f8f7f4;border-radius:6px;padding:6px 10px;margin-bottom:12px;}
+.review-section{margin-top:14px;border-top:0.5px solid #f1efe8;padding-top:12px;}
+.review-label{font-size:12px;color:#888780;margin-bottom:8px;font-weight:500;}
+.review-entry{padding:8px 0;border-bottom:0.5px solid #f1efe8;}
+.review-entry:last-child{border-bottom:none;}
+.review-user{font-size:12px;font-weight:500;color:#1a1a18;}
+.review-time{font-size:10px;color:#b4b2a9;margin-left:6px;}
+.review-text{font-size:13px;color:#5f5e5a;margin-top:4px;line-height:1.5;}
+.review-input{width:100%;padding:8px 10px;border:0.5px solid #d3d1c7;border-radius:8px;font-size:13px;font-family:inherit;background:#fff;color:#1a1a18;outline:none;resize:vertical;min-height:70px;margin-top:8px;}
+.review-input:focus{border-color:#185FA5;}
+.review-submit{margin-top:6px;padding:6px 16px;border:0.5px solid #185FA5;border-radius:8px;cursor:pointer;font-size:12px;font-family:inherit;background:#E6F1FB;color:#0C447C;}
+.review-submit:hover{background:#185FA5;color:#fff;}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
@@ -179,6 +190,12 @@ h1{font-size:22px;font-weight:500;color:#1a1a18;margin-bottom:0.25rem;}
 <div class="rsvp-label">Mark your attendance:</div>
 <div class="rsvp-btns" id="rsvpBtns"></div>
 <div class="rsvp-faces" id="rsvpFaces"></div>
+</div>
+<div class="review-section" id="reviewSection" style="display:none;">
+<div class="review-label">Reviews</div>
+<div id="reviewList"></div>
+<textarea class="review-input" id="reviewInput" placeholder="Share your experience..."></textarea>
+<button class="review-submit" onclick="submitReview()">Post review</button>
 </div>
 </div>
 <div class="add-toggle" onclick="toggleAdd()"><span>Add a show manually</span><span id="addIcon">+</span></div>
@@ -286,6 +303,26 @@ async function firebaseLoadAll(){
   }catch(e){console.warn("FB loadAll:",e);return{};}
 }
 function syncTrackedArtists(){}
+async function firebaseLoadReviews(key){
+  if(!key)return[];
+  try{
+    const snap=await db.collection("reviews").doc(key).get();
+    if(snap.exists)return snap.data().entries||[];
+    return[];
+  }catch(e){console.warn("FB loadReviews:",e);return[];}
+}
+async function firebaseSaveReview(key,entry){
+  if(!key)return false;
+  try{
+    const snap=await db.collection("reviews").doc(key).get();
+    const entries=snap.exists?(snap.data().entries||[]):[];
+    // Replace existing review by same user or add new
+    const idx=entries.findIndex(e=>e.user===entry.user);
+    if(idx>=0)entries[idx]=entry;else entries.push(entry);
+    await db.collection("reviews").doc(key).set({entries});
+    return true;
+  }catch(e){console.warn("FB saveReview:",e);return false;}
+}
 async function loadTrackedArtists(){
   try{const s=localStorage.getItem("seattle-cal-artists");if(s)trackedArtists=JSON.parse(s);}catch(e){trackedArtists=[];}
   if(!userName)return;
@@ -835,6 +872,7 @@ function showDetail(id){
     ${onSaleHtml(ev)}${ticketBtn}
     <div class="det-row" style="margin-top:4px;">${sourceBadge}</div>`;
   renderRsvpBtns(id);renderRsvpFaces(id);
+  renderReviews(ev);
   const p=document.getElementById("detailPanel");p.classList.add("open");
   p.scrollIntoView({behavior:"smooth",block:"nearest"});
 }
@@ -990,6 +1028,43 @@ function jumpToShow(id){
   document.querySelectorAll(".tab")[0].classList.add("active");
   document.getElementById("pane-calendar").classList.add("active");
   renderCalendar();showDetail(id);
+}
+let currentReviewKey=null;
+async function renderReviews(ev){
+  const section=document.getElementById("reviewSection");
+  const list=document.getElementById("reviewList");
+  if(!ev){section.style.display="none";return;}
+  // Only show reviews section for past shows
+  const nowLocal=new Date();
+  const today=nowLocal.getFullYear()+"-"+String(nowLocal.getMonth()+1).padStart(2,"0")+"-"+String(nowLocal.getDate()).padStart(2,"0");
+  if(ev.date>today){section.style.display="none";return;}
+  section.style.display="block";
+  currentReviewKey=rsvpKey(ev);
+  const entries=await firebaseLoadReviews(currentReviewKey);
+  if(!entries.length){list.innerHTML=`<div style="font-size:12px;color:#b4b2a9;padding:4px 0;">No reviews yet. Be the first!</div>`;}
+  else{
+    list.innerHTML=entries.map(e=>{
+      const d=new Date(e.timestamp);
+      const timeStr=d.toLocaleDateString("default",{month:"short",day:"numeric",year:"numeric"});
+      return`<div class="review-entry"><span class="review-user">${e.user}</span><span class="review-time">${timeStr}</span><div class="review-text">${e.text}</div></div>`;
+    }).join("");
+  }
+  // Pre-fill if user already reviewed
+  const myReview=entries.find(e=>e.user===userName);
+  document.getElementById("reviewInput").value=myReview?myReview.text:"";
+}
+async function submitReview(){
+  if(!userName){alert("Enter your name at the top first.");return;}
+  const text=document.getElementById("reviewInput").value.trim();
+  if(!text){alert("Please write something before posting.");return;}
+  if(!currentReviewKey)return;
+  const entry={user:userName,text,timestamp:new Date().toISOString()};
+  const ok=await firebaseSaveReview(currentReviewKey,entry);
+  if(ok){
+    // Find current event and re-render
+    const ev=events.find(e=>rsvpKey(e)===currentReviewKey);
+    if(ev)await renderReviews(ev);
+  }
 }
 function populateVenueSelect(){
   VENUES.forEach(v=>{
