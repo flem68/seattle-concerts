@@ -232,6 +232,7 @@ const LS_NAME="seattle-cal-name";
 const BIN_ID="69f0f47a856a68218982c5a9";
 const TRACTOR_WORKER="https://tractor-proxy.paul-7ec.workers.dev";
 const DO206_WORKER="https://elcorazon-proxy.flem68.workers.dev/";
+const ZOOTUNES_WORKER="https://zootunes-proxy.flem68.workers.dev/";
 
 const VENUES=["Tractor Tavern","Sunset Tavern","Moore Theatre","The Crocodile","Barboza","El Corazon","High Dive","Triple Door","Showbox SoDo","The Clockout Lounge","Climate Pledge Arena","Paramount Theatre","The Showbox","Neumos","WaMu Theater","Neptune Theatre","Gorge Amphitheatre","5th Avenue Theatre","Chateau Ste. Michelle","Chop Suey","Zoo Tunes","Remlinger Farms","Marymoor Live","Other"];
 const VC={"Tractor Tavern":{bg:"#FAEEDA",text:"#633806",dot:"#BA7517"},"Sunset Tavern":{bg:"#E1F5EE",text:"#085041",dot:"#0F6E56"},"Moore Theatre":{bg:"#EEEDFE",text:"#3C3489",dot:"#534AB7"},"The Crocodile":{bg:"#FAECE7",text:"#712B13",dot:"#D85A30"},"Barboza":{bg:"#FBEAF0",text:"#72243E",dot:"#993556"},"El Corazon":{bg:"#FCEBEB",text:"#791F1F",dot:"#E24B4A"},"High Dive":{bg:"#EAF3DE",text:"#27500A",dot:"#639922"},"Triple Door":{bg:"#E6F1FB",text:"#0C447C",dot:"#378ADD"},"Showbox SoDo":{bg:"#F1EFE8",text:"#444441",dot:"#888780"},"The Clockout Lounge":{bg:"#FAC775",text:"#412402",dot:"#854F0B"},"Climate Pledge Arena":{bg:"#B5D4F4",text:"#042C53",dot:"#185FA5"},"Paramount Theatre":{bg:"#CECBF6",text:"#26215C",dot:"#534AB7"},"The Showbox":{bg:"#9FE1CB",text:"#04342C",dot:"#1D9E75"},"Neumos":{bg:"#F4C0D1",text:"#4B1528",dot:"#D4537E"},"WaMu Theater":{bg:"#C0DD97",text:"#173404",dot:"#3B6D11"},"Neptune Theatre":{bg:"#F0997B",text:"#4A1B0C",dot:"#993C1D"},"Gorge Amphitheatre":{bg:"#85B7EB",text:"#042C53",dot:"#185FA5"},"5th Avenue Theatre":{bg:"#FCEBEB",text:"#501313",dot:"#A32D2D"},"Chateau Ste. Michelle":{bg:"#EAF3DE",text:"#1A3D0A",dot:"#4A8C1C"},"Chop Suey":{bg:"#FAECE7",text:"#5C1A0A",dot:"#C24E2A"},"Zoo Tunes":{bg:"#E6F4FB",text:"#0A3A52",dot:"#1A7FA8"},"Remlinger Farms":{bg:"#FEF3C7",text:"#78350F",dot:"#D97706"},"Marymoor Live":{bg:"#D1FAE5",text:"#064E3B",dot:"#059669"},"Other":{bg:"#D3D1C7",text:"#2C2C2A",dot:"#5F5E5A"}};
@@ -423,6 +424,26 @@ async function fetchTractorTavern(){
       }
     });
   }catch(e){console.warn("Tractor Worker error:",e.message);}
+  return results;
+}
+async function fetchZooTunesVenues(){
+  const results=[];
+  try{
+    const resp=await fetch(ZOOTUNES_WORKER);
+    if(!resp.ok)return results;
+    const data=await resp.json();
+    const evList=data.events||[];
+    const now=new Date();
+    const nowStr=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0")+"-"+String(now.getDate()).padStart(2,"0");
+    evList.forEach(ev=>{
+      if(!ev.artist||!ev.date||ev.date<nowStr)return;
+      if(!results.some(e=>normalizeArtist(e.artist)===normalizeArtist(ev.artist)&&e.date===ev.date)){
+        const nev={id:nextId++,artist:ev.artist,date:ev.date,time:ev.time||"6:00 PM",venue:"Zoo Tunes",genre:"",source:"ticketmaster"};
+        if(ev.ticketUrl)nev.ticketUrl=ev.ticketUrl;
+        results.push(nev);
+      }
+    });
+  }catch(e){console.warn("ZooTunes Worker error:",e.message);}
   return results;
 }
 async function fetchDo206Venues(){
@@ -624,6 +645,11 @@ async function runSync(auto=false){
   do206Events.forEach(de=>{
     if(!tmEvents.some(e=>normalizeArtist(e.artist)===normalizeArtist(de.artist)&&e.date===de.date))tmEvents.push(de);
   });
+  prog.textContent="Fetching Zoo Tunes…";
+  const zooEvents=await fetchZooTunesVenues();
+  zooEvents.forEach(ze=>{
+    if(!tmEvents.some(e=>normalizeArtist(e.artist)===normalizeArtist(ze.artist)&&e.date===ze.date))tmEvents.push(ze);
+  });
   prog.textContent="Fetching Gorge, Chateau, Remlinger & Marymoor…";
   const extraVenues=[
     {keyword:"Gorge Amphitheatre",name:"Gorge Amphitheatre"},
@@ -638,16 +664,31 @@ async function runSync(auto=false){
     });
     await new Promise(r=>setTimeout(r,300));
   }
-  // Zoo Tunes - query by Ticketmaster venue ID
+
   prog.textContent="Fetching Zoo Tunes…";
   try{
+    // Try by venue ID
     const zooUrl=`${TM_BASE}/events.json?apikey=${TM_KEY}&venueId=123005&startDateTime=${start}&endDateTime=${end}&size=50&sort=date,asc`;
     const zooResp=await fetch(zooUrl);
+    let zooAdded=0;
     if(zooResp.ok){
       const zooData=await zooResp.json();
       if(!zooData.fault){
         const zooBatch=(zooData._embedded&&zooData._embedded.events)||[];
         zooBatch.forEach(tme=>{
+          const ev=parseTmEvent(tme,"Zoo Tunes");
+          if(ev&&!tmEvents.some(e=>normalizeArtist(e.artist)===normalizeArtist(ev.artist)&&e.date===ev.date)){tmEvents.push(ev);zooAdded++;}
+        });
+      }
+    }
+    // Also try keyword search to catch anything missed
+    const zooUrl2=`${TM_BASE}/events.json?apikey=${TM_KEY}&keyword=ZooTunes&stateCode=WA&startDateTime=${start}&endDateTime=${end}&size=50&sort=date,asc`;
+    const zooResp2=await fetch(zooUrl2);
+    if(zooResp2.ok){
+      const zooData2=await zooResp2.json();
+      if(!zooData2.fault){
+        const zooBatch2=(zooData2._embedded&&zooData2._embedded.events)||[];
+        zooBatch2.forEach(tme=>{
           const ev=parseTmEvent(tme,"Zoo Tunes");
           if(ev&&!tmEvents.some(e=>normalizeArtist(e.artist)===normalizeArtist(ev.artist)&&e.date===ev.date))tmEvents.push(ev);
         });
