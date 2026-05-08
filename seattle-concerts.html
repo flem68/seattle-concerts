@@ -785,7 +785,28 @@ async function saveToBinFull(lastSync){
   setSyncStatus("Saving...","syncing");
   try{
     lastSyncTs=lastSync;
-    await db.collection("calendar").doc("shared").set({events,rsvps,lastSync});
+    // Preserve past 14 days of events from existing Firebase data
+    const nowLocal=new Date();
+    const cutoff=new Date(nowLocal);cutoff.setDate(cutoff.getDate()-14);
+    const cutoffStr=cutoff.getFullYear()+"-"+String(cutoff.getMonth()+1).padStart(2,"0")+"-"+String(cutoff.getDate()).padStart(2,"0");
+    const todayStr=nowLocal.getFullYear()+"-"+String(nowLocal.getMonth()+1).padStart(2,"0")+"-"+String(nowLocal.getDate()).padStart(2,"0");
+    // Get existing past events from Firebase
+    let pastEvents=[];
+    try{
+      const snap=await db.collection("calendar").doc("shared").get();
+      if(snap.exists){
+        const existing=snap.data().events||[];
+        pastEvents=existing.filter(e=>e.date<todayStr&&e.date>=cutoffStr);
+      }
+    }catch(e){}
+    // Merge: past events + new future events (dedup by artist+date)
+    const futureEvents=events.filter(e=>e.date>=todayStr);
+    const merged=[...pastEvents];
+    futureEvents.forEach(fe=>{
+      if(!merged.some(e=>normalizeArtist(e.artist)===normalizeArtist(fe.artist)&&e.date===fe.date))merged.push(fe);
+    });
+    await db.collection("calendar").doc("shared").set({events:merged,rsvps,lastSync});
+    events=merged; // Update in-memory events to include past
     setSyncStatus("Synced ✓","");
   }catch(e){setSyncStatus("Sync failed","err");console.warn("Firebase write error:",e);}
 }
