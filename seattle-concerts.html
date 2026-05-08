@@ -163,6 +163,7 @@ h1{font-size:22px;font-weight:500;color:#1a1a18;margin-bottom:0.25rem;}
 <button class="tab" onclick="switchTab('tracked',this)">My artists</button>
 <button class="tab" onclick="switchTab('friends',this)">Friends</button>
 <button class="tab" onclick="switchTab('community',this)">Friends' artists</button>
+<button class="tab" onclick="switchTab('reviews',this)">Concert reviews</button>
 </div>
 <div id="pane-calendar" class="pane active">
 <div class="cal-header">
@@ -233,10 +234,11 @@ h1{font-size:22px;font-weight:500;color:#1a1a18;margin-bottom:0.25rem;}
 <div id="pane-friends" class="pane">
 <div class="section-label">Upcoming shows — who's going</div>
 <div id="friendsFeed"></div>
-<div id="pastShowsSection" style="margin-top:1.5rem;">
-<div class="section-label">Past shows — last 14 days</div>
-<div id="pastShowsFeed"></div>
 </div>
+<div id="pane-reviews" class="pane">
+<div class="section-label">Past shows — last 14 days</div>
+<div class="private-note">Shows from artists tracked by anyone in the group. Click a show to read or write a review.</div>
+<div id="pastShowsFeed"></div>
 </div>
 <div id="pane-community" class="pane">
 <div class="section-label">Friends' artists</div>
@@ -825,7 +827,7 @@ function switchTab(name,el){
   document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
   document.querySelectorAll(".pane").forEach(p=>p.classList.remove("active"));
   el.classList.add("active");document.getElementById("pane-"+name).classList.add("active");
-  if(name==="tracked"){renderArtistList();initSharingToggle();}if(name==="friends"){renderFriendsFeed();renderPastShows();}if(name==="community")renderCommunityFeed();
+  if(name==="tracked"){renderArtistList();initSharingToggle();}if(name==="friends")renderFriendsFeed();if(name==="community")renderCommunityFeed();if(name==="reviews")renderPastShows();
 }
 function changeMonth(dir){
   curMonth+=dir;if(curMonth>11){curMonth=0;curYear++;}if(curMonth<0){curMonth=11;curYear--;}
@@ -1129,7 +1131,9 @@ async function submitReview(){
   const entry={user:userName,text,timestamp:new Date().toISOString()};
   const ok=await firebaseSaveReview(currentReviewKey,entry);
   if(ok){
-    // Find current event and re-render
+    document.getElementById("reviewInput").value="";
+    const btn=document.querySelector(".review-submit");
+    if(btn){btn.textContent="Review posted ✓";btn.style.background="#E1F5EE";btn.style.color="#085041";btn.style.borderColor="#0F6E56";setTimeout(()=>{btn.textContent="Post review";btn.style.background="";btn.style.color="";btn.style.borderColor="";},3000);}
     const ev=events.find(e=>rsvpKey(e)===currentReviewKey);
     if(ev)await renderReviews(ev);
   }
