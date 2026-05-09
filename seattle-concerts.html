@@ -184,34 +184,20 @@ h1{font-size:22px;font-weight:500;color:#1a1a18;margin-bottom:0.25rem;}
 <div class="dl">Wed</div><div class="dl">Thu</div><div class="dl">Fri</div><div class="dl">Sat</div>
 </div>
 <div class="cal-grid" id="calGrid"></div>
-<div class="detail" id="detailPanel">
-<div class="det-hdr"><span class="det-title" id="detTitle"></span><button class="x-btn" onclick="closeDetail()">&#215;</button></div>
-<div class="det-meta" id="detMeta"></div>
-<div class="rsvp-section">
-<div class="rsvp-label">Mark your attendance:</div>
-<div class="rsvp-btns" id="rsvpBtns"></div>
-<div class="rsvp-faces" id="rsvpFaces"></div>
-</div>
-<div class="review-section" id="reviewSection" style="display:none;">
-<div class="review-label">Reviews</div>
-<div id="reviewList"></div>
-<textarea class="review-input" id="reviewInput" placeholder="Share your experience..."></textarea>
-<button class="review-submit" onclick="submitReview()">Post review</button>
-</div>
-</div>
+<div class="detail" id="detailPanel"></div>
 <div class="add-toggle" onclick="toggleAdd()"><span>Add a show manually</span><span id="addIcon">+</span></div>
 <div id="addForm" style="display:none;" class="add-form">
-<div class="info-banner">Use this to add shows from smaller venues not covered by Ticketmaster — e.g. shows you spotted on a venue website.</div>
+<div class="info-banner">Use this to add shows from smaller venues not covered by Ticketmaster.</div>
 <div class="fg">
 <div class="ff"><label>Artist / event</label><input type="text" id="fArtist" placeholder="e.g. Kevin Morby"></div>
 <div><label>Date</label><input type="date" id="fDate"></div>
 <div><label>Time</label><input type="time" id="fTime" value="20:00"></div>
-<div class="ff"><label>Venue</label><select id="fVenue"></select></div>
-<div class="ff"><label>Genre / notes (optional)</label><input type="text" id="fGenre" placeholder="e.g. Indie folk"></div>
-<div class="ff"><label>Tickets on sale date (optional)</label><input type="date" id="fOnSale"></div>
-<div class="ff"><label>Ticket URL (optional)</label><input type="text" id="fTicketUrl" placeholder="https://..."></div>
+<div class="ff"><label>Venue</label><select id="fVenue"><option value="">Select venue...</option></select></div>
+<div class="ff"><label>Genre / notes</label><input type="text" id="fGenre" placeholder="optional"></div>
+<div><label>Tickets on sale date</label><input type="date" id="fOnSale"></div>
+<div class="ff"><label>Ticket URL</label><input type="text" id="fTicketUrl" placeholder="optional"></div>
 </div>
-<button class="fetch-btn" onclick="addManualShow()" style="margin-top:10px;">Add to calendar</button>
+<button onclick="addShow()">Add show</button>
 </div>
 </div>
 <div id="pane-tracked" class="pane">
@@ -1091,7 +1077,7 @@ async function renderPastShows(){
 
   feed.innerHTML=past.map(ev=>{
     const c=gc(ev.venue);
-    return`<div class="fe-row" onclick="jumpToShow(${ev.id})">
+    return`<div class="fe-row" onclick="showDetailFromReviews(${ev.id})">
       <div class="fe-dot" style="background:${c.dot}"></div>
       <div class="fe-info">
         <div class="fe-artist">${ev.artist}</div>
@@ -1099,6 +1085,26 @@ async function renderPastShows(){
       </div>
     </div>`;
   }).join("");
+}
+function showDetailFromReviews(id){
+  const ev=events.find(e=>e.id===id);
+  if(!ev)return;
+  // Open detail panel in place without switching to calendar tab
+  const panel=document.getElementById("detailPanel");
+  const venueCfg=gc(ev.venue);
+  let html=`<button class="close-btn" onclick="closeDetail()">✕</button>`;
+  html+=`<div class="det-artist">${ev.artist}</div>`;
+  html+=`<div class="det-venue"><span class="det-dot" style="background:${venueCfg.dot}"></span>${ev.venue}</div>`;
+  html+=`<div class="det-date">📅 ${fmtDate(ev.date)} &nbsp;·&nbsp; ${ev.time||"8:00 PM"}</div>`;
+  if(ev.ticketUrl)html+=`<div class="det-row"><a href="${ev.ticketUrl}" target="_blank" class="buy-btn">🎫 Buy tickets</a></div>`;
+  html+=onSaleHtml(ev);
+  html+=`<div class="rsvp-section"><div class="rsvp-label">Mark your attendance:</div><div class="rsvp-btns" id="rsvpBtns"></div><div class="rsvp-faces" id="rsvpFaces"></div></div>`;
+  html+=`<div class="review-section" id="reviewSection"><div class="review-label">Reviews</div><div id="reviewList"></div><textarea class="review-input" id="reviewInput" placeholder="Share your experience..."></textarea><button class="review-submit" onclick="submitReview()">Post review</button></div>`;
+  panel.innerHTML=html;
+  panel.classList.add("open");
+  renderRsvpBtns(id);renderRsvpFaces(id);
+  renderReviews(ev);
+  panel.scrollIntoView({behavior:"smooth",block:"nearest"});
 }
 let currentReviewKey=null;
 async function renderReviews(ev){
