@@ -184,7 +184,7 @@ h1{font-size:22px;font-weight:500;color:#1a1a18;margin-bottom:0.25rem;}
 <div class="dl">Wed</div><div class="dl">Thu</div><div class="dl">Fri</div><div class="dl">Sat</div>
 </div>
 <div class="cal-grid" id="calGrid"></div>
-<div class="detail" id="detailPanel"></div>
+
 <div class="add-toggle" onclick="toggleAdd()"><span>Add a show manually</span><span id="addIcon">+</span></div>
 <div id="addForm" style="display:none;" class="add-form">
 <div class="info-banner">Use this to add shows from smaller venues not covered by Ticketmaster.</div>
@@ -231,6 +231,7 @@ h1{font-size:22px;font-weight:500;color:#1a1a18;margin-bottom:0.25rem;}
 <div id="communityFeed"></div>
 </div>
 </div>
+<div class="detail" id="detailPanel"></div>
 <script>
 const JSONBIN_KEY="$2a$10$nBFTWzh0pyxG4/hR0BRi1um4gGwMc1GZ2LnXVpaEJX2.6nwdWae/S";
 const JSONBIN_BASE="https://api.jsonbin.io/v3";
@@ -936,7 +937,10 @@ function showDayEvents(ds,devs){
   document.getElementById("rsvpBtns").innerHTML="";document.getElementById("rsvpFaces").innerHTML="";
   document.getElementById("detailPanel").classList.add("open");
 }
-function closeDetail(){document.getElementById("detailPanel").classList.remove("open");}
+function closeDetail(){
+  const p=document.getElementById("detailPanel");if(p){p.classList.remove("open");p.innerHTML="";}
+  const rp=document.getElementById("reviewDetailPanel");if(rp){rp.classList.remove("open");rp.innerHTML="";}
+}
 function fmtDate(str){const[y,m,d]=str.split("-").map(Number);return new Date(y,m-1,d).toLocaleDateString("default",{weekday:"short",month:"long",day:"numeric"});}
 function toggleAdd(){
   addFormOpen=!addFormOpen;
@@ -1089,7 +1093,6 @@ async function renderPastShows(){
 function showDetailFromReviews(id){
   const ev=events.find(e=>e.id===id);
   if(!ev)return;
-  // Open detail panel in place without switching to calendar tab
   const panel=document.getElementById("detailPanel");
   const venueCfg=gc(ev.venue);
   let html=`<button class="close-btn" onclick="closeDetail()">✕</button>`;
