@@ -46,7 +46,7 @@ h1{font-size:22px;font-weight:500;color:#1a1a18;margin-bottom:0.25rem;}
 .epill.tracked{outline:1.5px solid #185FA5;outline-offset:-1px;}
 .epill.manual{outline:1.5px solid #639922;outline-offset:-1px;}
 .more{font-size:9px;color:#b4b2a9;cursor:pointer;padding:1px 3px;}
-.detail{margin-top:0.75rem;border:0.5px solid #e0ded8;border-radius:12px;padding:1rem 1.25rem;background:#fff;display:none;}
+.detail{display:none;position:fixed;bottom:0;left:0;right:0;max-height:85vh;overflow-y:auto;border-top:0.5px solid #e0ded8;border-radius:16px 16px 0 0;padding:1rem 1.25rem;background:#fff;z-index:1000;box-shadow:0 -4px 24px rgba(0,0,0,0.12);}
 .detail.open{display:block;}
 .det-hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;}
 .det-title{font-size:15px;font-weight:500;}
@@ -230,7 +230,12 @@ h1{font-size:22px;font-weight:500;color:#1a1a18;margin-bottom:0.25rem;}
 <div class="section-label">Friends' artists</div>
 <div id="communityFeed"></div>
 </div>
-<div class="detail" id="detailPanel"></div>
+<div class="detail" id="detailPanel">
+  <div class="det-hdr"><span class="det-title" id="detTitle"></span><button class="x-btn" onclick="closeDetail()">✕</button></div>
+  <div id="detMeta"></div>
+  <div class="rsvp-section"><div class="rsvp-label">Mark your attendance:</div><div class="rsvp-btns" id="rsvpBtns"></div><div class="rsvp-faces" id="rsvpFaces"></div></div>
+  <div class="review-section" id="reviewSection" style="display:none;"><div class="review-label">Reviews</div><div id="reviewList"></div><textarea class="review-input" id="reviewInput" placeholder="Share your experience..."></textarea><button class="review-submit" onclick="submitReview()">Post review</button></div>
+</div>
 </div>
 <script>
 const JSONBIN_KEY="$2a$10$nBFTWzh0pyxG4/hR0BRi1um4gGwMc1GZ2LnXVpaEJX2.6nwdWae/S";
@@ -889,7 +894,7 @@ function showDetail(id){
   renderRsvpBtns(id);renderRsvpFaces(id);
   renderReviews(ev);
   const p=document.getElementById("detailPanel");p.classList.add("open");
-  p.scrollIntoView({behavior:"smooth",block:"nearest"});
+  p.scrollTop=0;
 }
 function renderRsvpBtns(id){
   const ev=events.find(e=>e.id===id);if(!ev)return;
@@ -1091,24 +1096,9 @@ async function renderPastShows(){
   }).join("");
 }
 function showDetailFromReviews(id){
-  const ev=events.find(e=>e.id===id);
-  if(!ev)return;
-  const panel=document.getElementById("detailPanel");
-  const venueCfg=gc(ev.venue);
-  let html=`<button class="close-btn" onclick="closeDetail()">✕</button>`;
-  html+=`<div class="det-artist">${ev.artist}</div>`;
-  html+=`<div class="det-venue"><span class="det-dot" style="background:${venueCfg.dot}"></span>${ev.venue}</div>`;
-  html+=`<div class="det-date">📅 ${fmtDate(ev.date)} &nbsp;·&nbsp; ${ev.time||"8:00 PM"}</div>`;
-  if(ev.ticketUrl)html+=`<div class="det-row"><a href="${ev.ticketUrl}" target="_blank" class="buy-btn">🎫 Buy tickets</a></div>`;
-  html+=onSaleHtml(ev);
-  html+=`<div class="rsvp-section"><div class="rsvp-label">Mark your attendance:</div><div class="rsvp-btns" id="rsvpBtns"></div><div class="rsvp-faces" id="rsvpFaces"></div></div>`;
-  html+=`<div class="review-section" id="reviewSection"><div class="review-label">Reviews</div><div id="reviewList"></div><textarea class="review-input" id="reviewInput" placeholder="Share your experience..."></textarea><button class="review-submit" onclick="submitReview()">Post review</button></div>`;
-  panel.innerHTML=html;
-  panel.classList.add("open");
-  renderRsvpBtns(id);renderRsvpFaces(id);
-  renderReviews(ev);
-  panel.scrollIntoView({behavior:"smooth",block:"nearest"});
+  showDetail(id);
 }
+
 let currentReviewKey=null;
 async function renderReviews(ev){
   const section=document.getElementById("reviewSection");
