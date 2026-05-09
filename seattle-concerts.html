@@ -820,7 +820,23 @@ function switchTab(name,el){
   document.querySelectorAll(".pane").forEach(p=>p.classList.remove("active"));
   el.classList.add("active");document.getElementById("pane-"+name).classList.add("active");
   window.scrollTo({top:0,behavior:"smooth"});
-  if(name==="tracked"){renderArtistList();initSharingToggle();}if(name==="friends")renderFriendsFeed();if(name==="community")renderCommunityFeed();if(name==="reviews")renderPastShows();
+  if(name==="tracked"){renderArtistList();initSharingToggle();
+// One-time cleanup: remove test show id:88888 from Firebase
+(async()=>{
+  try{
+    const snap=await db.collection("calendar").doc("shared").get();
+    if(snap.exists){
+      const data=snap.data();
+      const cleaned=(data.events||[]).filter(e=>e.id!==88888&&e.id!==99999);
+      if(cleaned.length!==(data.events||[]).length){
+        await db.collection("calendar").doc("shared").set({...data,events:cleaned});
+        events=events.filter(e=>e.id!==88888&&e.id!==99999);
+        renderCalendar();
+        console.log("Removed test shows from Firebase");
+      }
+    }
+  }catch(e){}
+})();}if(name==="friends")renderFriendsFeed();if(name==="community")renderCommunityFeed();if(name==="reviews")renderPastShows();
 }
 function changeMonth(dir){
   curMonth+=dir;if(curMonth>11){curMonth=0;curYear++;}if(curMonth<0){curMonth=11;curYear--;}
@@ -892,7 +908,7 @@ function showDetail(id){
     ${onSaleHtml(ev)}${ticketBtn}
     <div class="det-row" style="margin-top:4px;">${sourceBadge}</div>`;
   renderRsvpBtns(id);renderRsvpFaces(id);
-  renderReviews(ev);
+  renderReviews(ev,false);
   const p=document.getElementById("detailPanel");p.classList.add("open");
   p.scrollTop=0;
 }
@@ -943,8 +959,7 @@ function showDayEvents(ds,devs){
   document.getElementById("detailPanel").classList.add("open");
 }
 function closeDetail(){
-  const p=document.getElementById("detailPanel");if(p){p.classList.remove("open");p.innerHTML="";}
-  const rp=document.getElementById("reviewDetailPanel");if(rp){rp.classList.remove("open");rp.innerHTML="";}
+  const p=document.getElementById("detailPanel");if(p)p.classList.remove("open");
 }
 function fmtDate(str){const[y,m,d]=str.split("-").map(Number);return new Date(y,m-1,d).toLocaleDateString("default",{weekday:"short",month:"long",day:"numeric"});}
 function toggleAdd(){
@@ -1097,13 +1112,15 @@ async function renderPastShows(){
 }
 function showDetailFromReviews(id){
   showDetail(id);
+  const ev=events.find(e=>e.id===id);
+  if(ev)renderReviews(ev,true);
 }
 
 let currentReviewKey=null;
-async function renderReviews(ev){
+async function renderReviews(ev,showReviews=false){
   const section=document.getElementById("reviewSection");
   const list=document.getElementById("reviewList");
-  if(!ev){section.style.display="none";return;}
+  if(!ev||!showReviews){section.style.display="none";return;}
   // Only show reviews section for past shows
   const nowLocal=new Date();
   const today=nowLocal.getFullYear()+"-"+String(nowLocal.getMonth()+1).padStart(2,"0")+"-"+String(nowLocal.getDate()).padStart(2,"0");
@@ -1119,9 +1136,7 @@ async function renderReviews(ev){
       return`<div class="review-entry"><span class="review-user">${e.user}</span><span class="review-time">${timeStr}</span><div class="review-text">${e.text}</div></div>`;
     }).join("");
   }
-  // Pre-fill if user already reviewed
-  const myReview=entries.find(e=>e.user===userName);
-  document.getElementById("reviewInput").value=myReview?myReview.text:"";
+  document.getElementById("reviewInput").value="";
 }
 async function submitReview(){
   if(!userName){alert("Enter your name at the top first.");return;}
