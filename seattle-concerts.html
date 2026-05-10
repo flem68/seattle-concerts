@@ -236,7 +236,7 @@ Import from Spotify
 </div>
 <div id="pane-reviews" class="pane">
 <div class="section-label">Past shows — last 14 days</div>
-<div class="private-note">Shows from artists tracked by anyone in the group. Click a show to read or write a review.</div>
+<div class="private-note">Click any show below to read or write a review. Don't see a show you attended? <span onclick="findShowToReview()" style="color:#185FA5;cursor:pointer;text-decoration:underline;">Find a show to review</span>.</div>
 <div id="pastShowsFeed"></div>
 </div>
 <div id="pane-community" class="pane">
@@ -809,9 +809,20 @@ async function saveToBinFull(lastSync){
         pastEvents=existing.filter(e=>e.date<todayStr&&e.date>=cutoffStr);
       }
     }catch(e){}
-    // Merge: past events + new future events (dedup by artist+date)
+    // Also preserve events that have reviews (indefinitely)
+    let reviewedEventKeys=new Set();
+    try{
+      const rSnap=await db.collection("reviews").get();
+      rSnap.forEach(doc=>{if((doc.data().entries||[]).length)reviewedEventKeys.add(doc.id);});
+    }catch(e){}
+    const reviewedPastEvents=(existing||[]).filter(e=>{
+      if(e.date>=todayStr)return false;
+      if(e.date>=cutoffStr)return false; // already covered by pastEvents
+      return reviewedEventKeys.has(rsvpKey(e));
+    });
+    // Merge: reviewed old events + past 14 days + new future events
     const futureEvents=events.filter(e=>e.date>=todayStr);
-    const merged=[...pastEvents];
+    const merged=[...reviewedPastEvents,...pastEvents];
     futureEvents.forEach(fe=>{
       if(!merged.some(e=>normalizeArtist(e.artist)===normalizeArtist(fe.artist)&&e.date===fe.date))merged.push(fe);
     });
@@ -1089,50 +1100,69 @@ async function renderPastShows(){
   if(!feed)return;
   feed.innerHTML='<div style="font-size:12px;color:#b4b2a9;padding:4px 0;">Loading...</div>';
 
-  // Get all group tracked artists
-  const allArtists=await firebaseLoadAll();
-  const groupArtistNames=new Set();
-  Object.values(allArtists).forEach(list=>{
-    list.forEach(a=>{
-      const name=typeof a==="object"?a.typed||a.matched:a;
-      if(name)groupArtistNames.add(name.toLowerCase());
-    });
-  });
-
-  // Find shows in last 14 days
   const nowLocal=new Date();
   const today=nowLocal.getFullYear()+"-"+String(nowLocal.getMonth()+1).padStart(2,"0")+"-"+String(nowLocal.getDate()).padStart(2,"0");
   const cutoff=new Date(nowLocal);cutoff.setDate(cutoff.getDate()-14);
   const cutoffStr=cutoff.getFullYear()+"-"+String(cutoff.getMonth()+1).padStart(2,"0")+"-"+String(cutoff.getDate()).padStart(2,"0");
 
-  const past=events.filter(ev=>{
+  // Section 1: current user's tracked artists, last 14 days
+  const myArtistNames=trackedArtists.map(a=>typeof a==="object"?a.typed||a.matched:a).map(n=>n.toLowerCase());
+  const trackedPast=events.filter(ev=>{
     if(ev.date>=today||ev.date<cutoffStr)return false;
-    // Check if any group member tracks this artist
-    return Array.from(groupArtistNames).some(n=>isTrackedName(ev.artist,n));
-  }).sort((a,b)=>b.date.localeCompare(a.date));
+    return myArtistNames.some(n=>isTrackedName(ev.artist,n));
+  });
+
+  // Section 2: any show with at least one review — permanent, visible to all
+  let reviewedShows=[];
+  try{
+    const reviewSnap=await db.collection("reviews").get();
+    reviewSnap.forEach(doc=>{
+      const key=doc.id;const entries=doc.data().entries||[];
+      if(!entries.length)return;
+      // Find matching event in Firebase
+      const ev=events.find(e=>rsvpKey(e)===key);
+      if(ev&&!trackedPast.some(t=>t.id===ev.id))reviewedShows.push(ev);
+    });
+  }catch(e){console.warn("Reviews load error:",e);}
+
+  // Merge and sort
+  const past=[...trackedPast,...reviewedShows].filter((ev,idx,arr)=>arr.findIndex(e=>e.id===ev.id)===idx)
+    .sort((a,b)=>b.date.localeCompare(a.date));
 
   if(!past.length){
-    feed.innerHTML='<div class="empty">No past shows from tracked artists in the last 14 days.</div>';
+    feed.innerHTML='<div class="empty">No past shows yet. Shows you attended will appear here for 14 days, and any reviewed show stays permanently.</div>';
     return;
   }
 
   feed.innerHTML=past.map(ev=>{
     const c=gc(ev.venue);
+    const hasReview=reviewedShows.some(r=>r.id===ev.id);
     return`<div class="fe-row" onclick="showDetailFromReviews(${ev.id})">
       <div class="fe-dot" style="background:${c.dot}"></div>
       <div class="fe-info">
         <div class="fe-artist">${ev.artist}</div>
-        <div class="fe-venue">${ev.venue} &nbsp;·&nbsp; ${fmtDate(ev.date)}</div>
+        <div class="fe-venue">${ev.venue} &nbsp;·&nbsp; ${fmtDate(ev.date)}${hasReview?' <span style="font-size:10px;color:#185FA5;">✓ reviewed</span>':''}</div>
       </div>
     </div>`;
   }).join("");
 }
-function showDetailFromReviews(id){
-  showDetail(id);
-  const ev=events.find(e=>e.id===id);
-  if(ev)renderReviews(ev,true);
-}
 
+async function findShowToReview(){
+  const query=prompt('Enter artist name to find a past show:');
+  if(!query||!query.trim())return;
+  const q=query.trim().toLowerCase();
+  const nowLocal=new Date();
+  const todayStr=nowLocal.getFullYear()+'-'+String(nowLocal.getMonth()+1).padStart(2,'0')+'-'+String(nowLocal.getDate()).padStart(2,'0');
+  const cutoff=new Date(nowLocal);cutoff.setDate(cutoff.getDate()-14);
+  const cutoffStr=cutoff.getFullYear()+'-'+String(cutoff.getMonth()+1).padStart(2,'0')+'-'+String(cutoff.getDate()).padStart(2,'0');
+  const matches=events.filter(ev=>ev.date<todayStr&&ev.date>=cutoffStr&&ev.artist.toLowerCase().includes(q));
+  if(!matches.length){alert('No shows found for '+query+' in the last 14 days.');return;}
+  if(matches.length===1){showDetailFromReviews(matches[0].id);return;}
+  const lines=matches.map((ev,i)=>String(i+1)+'. '+ev.artist+' - '+fmtDate(ev.date)+' at '+ev.venue);
+  const choice=lines.join(', ');
+  const idx=parseInt(prompt('Multiple shows found: '+choice+'. Enter number:'))-1;
+  if(idx>=0&&idx<matches.length)showDetailFromReviews(matches[idx].id);
+}
 let currentReviewKey=null;
 async function renderReviews(ev,showReviews=false){
   const section=document.getElementById("reviewSection");
@@ -1167,7 +1197,7 @@ async function submitReview(){
     const btn=document.querySelector(".review-submit");
     if(btn){btn.textContent="Review posted ✓";btn.style.background="#E1F5EE";btn.style.color="#085041";btn.style.borderColor="#0F6E56";setTimeout(()=>{btn.textContent="Post review";btn.style.background="";btn.style.color="";btn.style.borderColor="";},3000);}
     const ev=events.find(e=>rsvpKey(e)===currentReviewKey);
-    if(ev)await renderReviews(ev);
+    if(ev)await renderReviews(ev,true);
   }
 }
 // Spotify OAuth PKCE helpers
