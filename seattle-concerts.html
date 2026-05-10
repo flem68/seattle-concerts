@@ -524,7 +524,7 @@ async function checkTrackedArtists(){
   if(!trackedArtists.length)return;
   const now=new Date();
   const start=now.toISOString().replace(/\.\d+Z$/,"Z");
-  const endDate=new Date(now.getFullYear(),now.getMonth()+6,now.getDate());
+  const endDate=new Date(now.getFullYear(),now.getMonth()+12,now.getDate());
   const end=endDate.toISOString().replace(/\.\d+Z$/,"Z");
   const newShows=[];
   for(const artist of trackedArtists){
