@@ -236,7 +236,12 @@ Import from Spotify
 </div>
 <div id="pane-reviews" class="pane">
 <div class="section-label">Past shows — last 14 days</div>
-<div class="private-note">Click any show below to read or write a review. Don't see a show you attended? <span onclick="findShowToReview()" style="color:#185FA5;cursor:pointer;text-decoration:underline;">Find a show to review</span>.</div>
+<div class="private-note">Click any show below to read or write a review. Don't see a show you attended? Search for it below.</div>
+<div style="display:flex;gap:8px;margin-bottom:12px;">
+<input type="text" id="findShowInput" placeholder="Search by artist name..." style="flex:1;padding:7px 10px;border:0.5px solid #d3d1c7;border-radius:8px;font-size:13px;font-family:inherit;outline:none;" onkeydown="if(event.key==='Enter')findShowToReview()">
+<button onclick="findShowToReview()" style="padding:7px 14px;background:#185FA5;color:#fff;border:none;border-radius:8px;font-size:12px;font-family:inherit;cursor:pointer;">Find</button>
+</div>
+<div id="findShowResults" style="margin-bottom:8px;"></div>
 <div id="pastShowsFeed"></div>
 </div>
 <div id="pane-community" class="pane">
@@ -1147,21 +1152,36 @@ async function renderPastShows(){
   }).join("");
 }
 
-async function findShowToReview(){
-  const query=prompt('Enter artist name to find a past show:');
-  if(!query||!query.trim())return;
-  const q=query.trim().toLowerCase();
+function selectFindShow(id){
+  const r=document.getElementById('findShowResults');
+  const i=document.getElementById('findShowInput');
+  if(r)r.innerHTML='';
+  if(i)i.value='';
+  showDetailFromReviews(id);
+}
+function findShowToReview(){
+  const input=document.getElementById('findShowInput');
+  const results=document.getElementById('findShowResults');
+  if(!input||!results)return;
+  const query=input.value.trim();
+  if(!query){results.innerHTML='';return;}
+  const q=query.toLowerCase();
   const nowLocal=new Date();
   const todayStr=nowLocal.getFullYear()+'-'+String(nowLocal.getMonth()+1).padStart(2,'0')+'-'+String(nowLocal.getDate()).padStart(2,'0');
   const cutoff=new Date(nowLocal);cutoff.setDate(cutoff.getDate()-14);
   const cutoffStr=cutoff.getFullYear()+'-'+String(cutoff.getMonth()+1).padStart(2,'0')+'-'+String(cutoff.getDate()).padStart(2,'0');
   const matches=events.filter(ev=>ev.date<todayStr&&ev.date>=cutoffStr&&ev.artist.toLowerCase().includes(q));
-  if(!matches.length){alert('No shows found for '+query+' in the last 14 days.');return;}
-  if(matches.length===1){showDetailFromReviews(matches[0].id);return;}
-  const lines=matches.map((ev,i)=>String(i+1)+'. '+ev.artist+' - '+fmtDate(ev.date)+' at '+ev.venue);
-  const choice=lines.join(', ');
-  const idx=parseInt(prompt('Multiple shows found: '+choice+'. Enter number:'))-1;
-  if(idx>=0&&idx<matches.length)showDetailFromReviews(matches[idx].id);
+  if(!matches.length){
+    results.innerHTML='<div style="font-size:12px;color:#888780;padding:4px 0;">No shows found for "'+query+'" in the last 14 days.</div>';
+    return;
+  }
+  results.innerHTML=matches.map(ev=>{
+    const c=gc(ev.venue);
+    return'<div class="fe-row" onclick="selectFindShow('+ev.id+')">'+
+      '<div class="fe-dot" style="background:'+c.dot+'"></div>'+
+      '<div class="fe-info"><div class="fe-artist">'+ev.artist+'</div>'+
+      '<div class="fe-venue">'+ev.venue+' · '+fmtDate(ev.date)+'</div></div></div>';
+  }).join('');
 }
 function showDetailFromReviews(id){
   showDetail(id);
