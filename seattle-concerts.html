@@ -1163,6 +1163,11 @@ async function findShowToReview(){
   const idx=parseInt(prompt('Multiple shows found: '+choice+'. Enter number:'))-1;
   if(idx>=0&&idx<matches.length)showDetailFromReviews(matches[idx].id);
 }
+function showDetailFromReviews(id){
+  showDetail(id);
+  const ev=events.find(e=>e.id===id);
+  if(ev)renderReviews(ev,true);
+}
 let currentReviewKey=null;
 async function renderReviews(ev,showReviews=false){
   const section=document.getElementById("reviewSection");
