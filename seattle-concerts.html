@@ -271,6 +271,7 @@ const SYNC_COOLDOWN_HOURS=12;
 const LS_NAME="seattle-cal-name";
 const BIN_ID="69f0f47a856a68218982c5a9";
 const SETLIST_API_KEY="LbsifG81R0VHz5rx9g3pB4Cs1vbdVFgYIL1k";
+const SETLIST_WORKER="https://setlist-proxy.flem68.workers.dev/";
 const SPOTIFY_CLIENT_ID="e6e08ca7b38f42eba112484bf095825b";
 const SPOTIFY_REDIRECT_URI="https://flem68.github.io/seattle-concerts/seattle-concerts.html";
 const SPOTIFY_SCOPES="user-follow-read";
@@ -1223,21 +1224,11 @@ async function fetchSetlist(artist,date){
   section.style.display="none";
   section.innerHTML="";
   try{
-    const url="https://api.setlist.fm/rest/1.0/search/setlists?artistName="+encodeURIComponent(artist)+"&p=1";
-    const resp=await fetch(url,{headers:{"x-api-key":SETLIST_API_KEY,"Accept":"application/json"}});
+    const url=SETLIST_WORKER+"?artist="+encodeURIComponent(artist)+"&date="+encodeURIComponent(date);
+    const resp=await fetch(url);
     if(!resp.ok)return;
     const data=await resp.json();
-    const setlists=data.setlist||[];
-    const parts=date.split("-");
-    const fmDate=parts[2]+"-"+parts[1]+"-"+parts[0];
-    const match=setlists.find(s=>s.eventDate===fmDate);
-    if(!match||!match.sets||!match.sets.set||!match.sets.set.length)return;
-    const songs=[];
-    match.sets.set.forEach(function(set){
-      (set.song||[]).forEach(function(song){
-        if(song.name)songs.push(song.name+(song.cover?" ("+song.cover.name+" cover)":"")+(song.info?" ["+song.info+"]":""));
-      });
-    });
+    const songs=data.songs||[];
     if(!songs.length)return;
     section.style.display="block";
     section.innerHTML="<div class=\"review-label\">Setlist</div><ol style=\"margin:4px 0 0 0;padding-left:1.4rem;\">"+songs.map(function(s){return"<li style=\"font-size:13px;color:#5f5e5a;padding:2px 0;\">"+s+"</li>";}).join("")+"</ol>";
