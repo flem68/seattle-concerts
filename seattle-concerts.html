@@ -1224,7 +1224,9 @@ async function fetchSetlist(artist,date){
   section.style.display="none";
   section.innerHTML="";
   try{
-    const url=SETLIST_WORKER+"?artist="+encodeURIComponent(artist)+"&date="+encodeURIComponent(date);
+    // Strip supporting acts to get just the headliner for setlist.fm lookup
+    const headliner=artist.split(/\s+(?:&|with|w\/|feat\.?|presents?)\s+/i)[0].trim();
+    const url=SETLIST_WORKER+"?artist="+encodeURIComponent(headliner)+"&date="+encodeURIComponent(date);
     const resp=await fetch(url);
     if(!resp.ok)return;
     const data=await resp.json();
