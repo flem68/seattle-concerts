@@ -163,7 +163,7 @@ h1{font-size:22px;font-weight:500;color:#1a1a18;margin-bottom:0.25rem;}
 <button class="tab" onclick="switchTab('tracked',this)">My artists</button>
 <button class="tab" onclick="switchTab('friends',this)">Friends</button>
 <button class="tab" onclick="switchTab('community',this)">Friends' artists</button>
-<button class="tab" onclick="switchTab('reviews',this)">Concert reviews</button>
+<button class="tab" onclick="switchTab('reviews',this)">Concert reviews & setlists</button>
 </div>
 <div id="pane-calendar" class="pane active">
 <div class="cal-header">
@@ -253,8 +253,8 @@ Import from Spotify
   <div id="detMeta"></div>
   <div class="rsvp-section"><div class="rsvp-label">Mark your attendance:</div><div class="rsvp-btns" id="rsvpBtns"></div><div class="rsvp-faces" id="rsvpFaces"></div></div>
   <div class="review-section" id="reviewSection" style="display:none;">
-    <div class="review-label">Reviews</div>
     <div id="setlistSection" style="display:none;margin-bottom:12px;"></div>
+    <div class="review-label" style="font-weight:700;">Reviews</div>
     <div id="reviewList"></div>
     <textarea class="review-input" id="reviewInput" placeholder="Share your experience..."></textarea>
     <input type="url" id="reviewPhotoUrl" placeholder="📷 Link to photos (optional)" style="width:100%;padding:7px 10px;border:0.5px solid #d3d1c7;border-radius:8px;font-size:13px;font-family:inherit;margin-top:6px;outline:none;box-sizing:border-box;">
@@ -1233,7 +1233,7 @@ async function fetchSetlist(artist,date){
     const songs=data.songs||[];
     if(!songs.length)return;
     section.style.display="block";
-    section.innerHTML="<div class=\"review-label\">Setlist</div><ol style=\"margin:4px 0 0 0;padding-left:1.4rem;\">"+songs.map(function(s){return"<li style=\"font-size:13px;color:#5f5e5a;padding:2px 0;\">"+s+"</li>";}).join("")+"</ol>";
+    section.innerHTML="<div class=\"review-label\" style=\"font-weight:700;\">Setlist</div><ol style=\"margin:4px 0 0 0;padding-left:1.4rem;\">"+songs.map(function(s){return"<li style=\"font-size:13px;color:#5f5e5a;padding:2px 0;\">"+s+"</li>";}).join("")+"</ol>";
   }catch(e){console.warn("Setlist fetch error:",e);}
 }
 let currentReviewKey=null;
