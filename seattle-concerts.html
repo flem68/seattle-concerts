@@ -835,11 +835,12 @@ async function saveToBinFull(lastSync){
     const todayStr=nowLocal.getFullYear()+"-"+String(nowLocal.getMonth()+1).padStart(2,"0")+"-"+String(nowLocal.getDate()).padStart(2,"0");
     // Get existing past events from Firebase
     let pastEvents=[];
+    let existingEvents=[];
     try{
       const snap=await db.collection("calendar").doc("shared").get();
       if(snap.exists){
-        const existing=snap.data().events||[];
-        pastEvents=existing.filter(e=>e.date<todayStr&&e.date>=cutoffStr);
+        existingEvents=snap.data().events||[];
+        pastEvents=existingEvents.filter(e=>e.date<todayStr&&e.date>=cutoffStr);
       }
     }catch(e){}
     // Also preserve events that have reviews (indefinitely)
@@ -848,7 +849,7 @@ async function saveToBinFull(lastSync){
       const rSnap=await db.collection("reviews").get();
       rSnap.forEach(doc=>{if((doc.data().entries||[]).length)reviewedEventKeys.add(doc.id);});
     }catch(e){}
-    const reviewedPastEvents=(existing||[]).filter(e=>{
+    const reviewedPastEvents=existingEvents.filter(e=>{
       if(e.date>=todayStr)return false;
       if(e.date>=cutoffStr)return false; // already covered by pastEvents
       return reviewedEventKeys.has(rsvpKey(e));
