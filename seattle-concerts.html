@@ -252,7 +252,14 @@ Import from Spotify
   <div class="det-hdr"><span class="det-title" id="detTitle"></span><button class="x-btn" onclick="closeDetail()">✕</button></div>
   <div id="detMeta"></div>
   <div class="rsvp-section"><div class="rsvp-label">Mark your attendance:</div><div class="rsvp-btns" id="rsvpBtns"></div><div class="rsvp-faces" id="rsvpFaces"></div></div>
-  <div class="review-section" id="reviewSection" style="display:none;"><div class="review-label">Reviews</div><div id="reviewList"></div><textarea class="review-input" id="reviewInput" placeholder="Share your experience..."></textarea><button class="review-submit" onclick="submitReview()">Post review</button></div>
+  <div class="review-section" id="reviewSection" style="display:none;">
+    <div class="review-label">Reviews</div>
+    <div id="setlistSection" style="display:none;margin-bottom:12px;"></div>
+    <div id="reviewList"></div>
+    <textarea class="review-input" id="reviewInput" placeholder="Share your experience..."></textarea>
+    <input type="url" id="reviewPhotoUrl" placeholder="📷 Link to photos (optional)" style="width:100%;padding:7px 10px;border:0.5px solid #d3d1c7;border-radius:8px;font-size:13px;font-family:inherit;margin-top:6px;outline:none;box-sizing:border-box;">
+    <button class="review-submit" onclick="submitReview()">Post review</button>
+  </div>
 </div>
 </div>
 <script>
@@ -263,6 +270,7 @@ const TM_BASE="https://app.ticketmaster.com/discovery/v2";
 const SYNC_COOLDOWN_HOURS=12;
 const LS_NAME="seattle-cal-name";
 const BIN_ID="69f0f47a856a68218982c5a9";
+const SETLIST_API_KEY="LbsifG81R0VHz5rx9g3pB4Cs1vbdVFgYIL1k";
 const SPOTIFY_CLIENT_ID="e6e08ca7b38f42eba112484bf095825b";
 const SPOTIFY_REDIRECT_URI="https://flem68.github.io/seattle-concerts/seattle-concerts.html";
 const SPOTIFY_SCOPES="user-follow-read";
@@ -711,9 +719,7 @@ async function runSync(auto=false){
     {keyword:"Gorge Amphitheatre",name:"Gorge Amphitheatre"},
     {keyword:"Chateau Ste Michelle",name:"Chateau Ste. Michelle"},
     {keyword:"Remlinger Farms",name:"Remlinger Farms"},
-    {keyword:"Marymoor Live",name:"Marymoor Live"},
-    {keyword:"T-Mobile Park",name:"T-Mobile Park"},
-    {keyword:"Lumen Field",name:"Lumen Field"}
+    {keyword:"Marymoor Live",name:"Marymoor Live"}
   ];
   for(const v of extraVenues){
     const vevents=await fetchVenueById(v.keyword,v.name);
@@ -753,6 +759,26 @@ async function runSync(auto=false){
       }
     }
   }catch(e){console.warn("Zoo Tunes fetch error:",e);}
+
+  // T-Mobile Park and Lumen Field - query by venue ID, music only
+  prog.textContent="Fetching T-Mobile Park & Lumen Field…";
+  for(const v of [{id:"123209",name:"T-Mobile Park"},{id:"123449",name:"Lumen Field"}]){
+    try{
+      const vUrl=`${TM_BASE}/events.json?apikey=${TM_KEY}&venueId=${v.id}&classificationName=music&startDateTime=${start}&endDateTime=${end}&size=50&sort=date,asc`;
+      const vResp=await fetch(vUrl);
+      if(vResp.ok){
+        const vData=await vResp.json();
+        if(!vData.fault){
+          const vBatch=(vData._embedded&&vData._embedded.events)||[];
+          vBatch.forEach(tme=>{
+            const ev=parseTmEvent(tme,v.name);
+            if(ev&&!tmEvents.some(e=>normalizeArtist(e.artist)===normalizeArtist(ev.artist)&&e.date===ev.date))tmEvents.push(ev);
+          });
+        }
+      }
+    }catch(e){console.warn(v.name+" fetch error:",e);}
+    await new Promise(r=>setTimeout(r,300));
+  }
 
   const merged=[...tmEvents];
   manualEvents.forEach(me=>{
@@ -1190,6 +1216,32 @@ function showDetailFromReviews(id){
   const ev=events.find(e=>e.id===id);
   if(ev)renderReviews(ev,true);
 }
+async function fetchSetlist(artist,date){
+  const section=document.getElementById("setlistSection");
+  if(!section)return;
+  section.style.display="none";
+  section.innerHTML="";
+  try{
+    const url="https://api.setlist.fm/rest/1.0/search/setlists?artistName="+encodeURIComponent(artist)+"&p=1";
+    const resp=await fetch(url,{headers:{"x-api-key":SETLIST_API_KEY,"Accept":"application/json"}});
+    if(!resp.ok)return;
+    const data=await resp.json();
+    const setlists=data.setlist||[];
+    const parts=date.split("-");
+    const fmDate=parts[2]+"-"+parts[1]+"-"+parts[0];
+    const match=setlists.find(s=>s.eventDate===fmDate);
+    if(!match||!match.sets||!match.sets.set||!match.sets.set.length)return;
+    const songs=[];
+    match.sets.set.forEach(function(set){
+      (set.song||[]).forEach(function(song){
+        if(song.name)songs.push(song.name+(song.cover?" ("+song.cover.name+" cover)":"")+(song.info?" ["+song.info+"]":""));
+      });
+    });
+    if(!songs.length)return;
+    section.style.display="block";
+    section.innerHTML="<div class=\"review-label\">Setlist</div><ol style=\"margin:4px 0 0 0;padding-left:1.4rem;\">"+songs.map(function(s){return"<li style=\"font-size:13px;color:#5f5e5a;padding:2px 0;\">"+s+"</li>";}).join("")+"</ol>";
+  }catch(e){console.warn("Setlist fetch error:",e);}
+}
 let currentReviewKey=null;
 async function renderReviews(ev,showReviews=false){
   const section=document.getElementById("reviewSection");
@@ -1201,13 +1253,15 @@ async function renderReviews(ev,showReviews=false){
   if(ev.date>today){section.style.display="none";return;}
   section.style.display="block";
   currentReviewKey=rsvpKey(ev);
+  fetchSetlist(ev.artist,ev.date);
   const entries=await firebaseLoadReviews(currentReviewKey);
   if(!entries.length){list.innerHTML=`<div style="font-size:12px;color:#b4b2a9;padding:4px 0;">No reviews yet. Be the first!</div>`;}
   else{
     list.innerHTML=entries.map(e=>{
       const d=new Date(e.timestamp);
       const timeStr=d.toLocaleDateString("default",{month:"short",day:"numeric",year:"numeric"});
-      return`<div class="review-entry"><span class="review-user">${e.user}</span><span class="review-time">${timeStr}</span><div class="review-text">${e.text}</div></div>`;
+      const photoLink=e.photoUrl?`<div style="margin-top:4px;"><a href="${e.photoUrl}" target="_blank" style="font-size:12px;color:#185FA5;text-decoration:none;">📷 View photos</a></div>`:"";
+      return`<div class="review-entry"><span class="review-user">${e.user}</span><span class="review-time">${timeStr}</span><div class="review-text">${e.text}</div>${photoLink}</div>`;
     }).join("");
   }
   document.getElementById("reviewInput").value="";
@@ -1217,10 +1271,13 @@ async function submitReview(){
   const text=document.getElementById("reviewInput").value.trim();
   if(!text){alert("Please write something before posting.");return;}
   if(!currentReviewKey)return;
+  const photoUrl=document.getElementById("reviewPhotoUrl")?document.getElementById("reviewPhotoUrl").value.trim():"";
   const entry={user:userName,text,timestamp:new Date().toISOString()};
+  if(photoUrl)entry.photoUrl=photoUrl;
   const ok=await firebaseSaveReview(currentReviewKey,entry);
   if(ok){
     document.getElementById("reviewInput").value="";
+    const pu=document.getElementById("reviewPhotoUrl");if(pu)pu.value="";
     const btn=document.querySelector(".review-submit");
     if(btn){btn.textContent="Review posted ✓";btn.style.background="#E1F5EE";btn.style.color="#085041";btn.style.borderColor="#0F6E56";setTimeout(()=>{btn.textContent="Post review";btn.style.background="";btn.style.color="";btn.style.borderColor="";},3000);}
     const ev=events.find(e=>rsvpKey(e)===currentReviewKey);
